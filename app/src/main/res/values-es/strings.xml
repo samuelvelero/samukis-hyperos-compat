@@ -36,8 +36,6 @@
 
     <string name="call_incoming">Llamada entrante</string>
     <string name="call_ongoing">En llamada</string>
-    <string name="action_mute">Silenciar</string>
-    <string name="action_unmute">Activar micrófono</string>
     <string name="demo_text">Isla de prueba</string>
     <string name="demo_dismiss">Cerrar</string>
 

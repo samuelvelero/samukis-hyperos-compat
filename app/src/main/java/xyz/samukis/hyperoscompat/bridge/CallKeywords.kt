@@ -10,15 +10,23 @@ class CallKeywords(context: Context) {
     private val decline = load(context, R.array.kw_decline)
     private val hangup = load(context, R.array.kw_hangup)
     private val mute = load(context, R.array.kw_mute)
+    private val unmute = load(context, R.array.kw_unmute)
+    private val deafen = load(context, R.array.kw_deafen)
     private val incoming = load(context, R.array.kw_incoming)
     private val ongoing = load(context, R.array.kw_ongoing)
     private val ended = load(context, R.array.kw_ended)
     private val generic = load(context, R.array.kw_generic)
 
+    /**
+     * Order matters: "Desactivar ensordecimiento" must land on DEAFEN before anything else,
+     * "Desactivar silencio" / "Unmute" on UNMUTE before the plain MUTE substrings match.
+     */
     fun roleOf(title: CharSequence?): ActionRole {
         val t = title?.toString()?.lowercase()?.trim().orEmpty()
         if (t.isEmpty()) return ActionRole.OTHER
         return when {
+            deafen.any { t.contains(it) } -> ActionRole.DEAFEN
+            unmute.any { t.contains(it) } -> ActionRole.UNMUTE
             hangup.any { t.contains(it) } -> ActionRole.HANGUP
             decline.any { t.contains(it) } -> ActionRole.DECLINE
             answer.any { t.contains(it) } -> ActionRole.ANSWER

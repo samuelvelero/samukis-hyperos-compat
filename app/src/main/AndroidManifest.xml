@@ -2,8 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- System mic mute for apps whose call notification has no mute button (Discord). -->
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <!-- Only the apps we bridge. Avoids QUERY_ALL_PACKAGES. -->
     <queries>
@@ -50,10 +48,6 @@
 
         <receiver
             android:name=".receiver.ActionReceiver"
-            android:exported="false" />
-
-        <receiver
-            android:name=".receiver.MuteReceiver"
             android:exported="false" />
     </application>
 </manifest>

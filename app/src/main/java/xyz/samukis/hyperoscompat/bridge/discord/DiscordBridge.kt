@@ -10,8 +10,6 @@ import xyz.samukis.hyperoscompat.bridge.CallKeywords
 import xyz.samukis.hyperoscompat.bridge.CallState
 import xyz.samukis.hyperoscompat.bridge.IslandAction
 import xyz.samukis.hyperoscompat.bridge.IslandSpec
-import xyz.samukis.hyperoscompat.island.MicMute
-import xyz.samukis.hyperoscompat.receiver.MuteReceiver
 
 /**
  * Discord: incoming calls (answer / decline) and ongoing voice sessions (mute / disconnect).
@@ -19,9 +17,11 @@ import xyz.samukis.hyperoscompat.receiver.MuteReceiver
  * the category, the action titles and the texts, in English and Spanish.
  *
  * Observed on a real device (Oct 2026): the voice notification is ongoing, has no chronometer,
- * a title like "Voz conectada — <canal>" and exactly one action, "Desconectar".
+ * title "<fase> — Toca para volver a la llamada" (fase: Esperando al servidor de voz, Conectando,
+ * Autenticando, Conectando RTC, Voz conectada), text = channel name, and three actions:
+ * "Desconectar", "Silenciar"/"Desactivar silencio", "Ensordecer"/"Desactivar ensordecimiento".
  */
-class DiscordBridge(private val context: Context) : AppBridge {
+class DiscordBridge(context: Context) : AppBridge {
     override val packageName = PACKAGE
     override val nameRes = R.string.app_discord
     override val accentColor = "#5865F2"
@@ -119,24 +119,11 @@ class DiscordBridge(private val context: Context) : AppBridge {
             return filled.map(::fromSource)
         }
 
-        // Ongoing: a mute button (Discord's own if it has one, else the system mic mute) and hang up.
-        val mute = find(ActionRole.MUTE)?.let(::fromSource) ?: systemMuteAction()
+        // Ongoing: Discord's own mute toggle (whichever state it is in) and hang up. Deafen is never offered.
+        val mute = (find(ActionRole.MUTE) ?: find(ActionRole.UNMUTE))?.let(::fromSource)
         val hangup = find(ActionRole.HANGUP)?.let(::fromSource)
-            ?: actions.indices.firstOrNull { roles[it] != ActionRole.MUTE }?.let(::fromSource)
+            ?: actions.indices.firstOrNull { roles[it] == ActionRole.OTHER }?.let(::fromSource)
         return listOfNotNull(mute, hangup)
-    }
-
-    private fun systemMuteAction(): IslandAction {
-        val muted = MicMute.isMuted()
-        return IslandAction(
-            role = ActionRole.MUTE,
-            title = context.getString(if (muted) R.string.action_unmute else R.string.action_mute),
-            icon = null,
-            intent = MuteReceiver.pendingIntent(context),
-            sourceIndex = -1,
-            iconRes = if (muted) R.drawable.ic_mic_off else R.drawable.ic_mic,
-            bgColor = if (muted) "#FF9F0A" else "#3A3A3C",
-        )
     }
 
     companion object {

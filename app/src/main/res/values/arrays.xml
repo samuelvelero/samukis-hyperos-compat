@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Lower-case substrings matched against action titles and texts (English + Spanish). -->
+    <!-- Lower-case substrings matched against action titles and texts (English + Spanish).
+         Discord (es) voice actions seen on device: "Desconectar", "Silenciar" / "Desactivar silencio",
+         "Ensordecer" / "Desactivar ensordecimiento". -->
     <string-array name="kw_answer">
         <item>answer</item><item>accept</item><item>join</item>
         <item>responder</item><item>contestar</item><item>aceptar</item><item>unirse</item><item>unirme</item>
@@ -14,17 +16,13 @@
         <item>colgar</item><item>desconectar</item><item>finalizar</item><item>salir</item><item>abandonar</item><item>terminar</item>
     </string-array>
     <string-array name="kw_mute">
-        <item>mute</item><item>unmute</item><item>deafen</item><item>mic</item>
-        <item>silenciar</item><item>mutear</item><item>ensordecer</item><item>micrófono</item><item>microfono</item>
+        <item>mute</item><item>silenciar</item><item>mutear</item>
     </string-array>
-    <string-array name="kw_generic">
-        <item>tap to</item><item>toca para</item><item>pulsa para</item>
-        <item>voice connected</item><item>voz conectada</item><item>connected to</item><item>conectado a</item>
-        <item>in call</item><item>en llamada</item><item>discord</item>
+    <string-array name="kw_unmute">
+        <item>unmute</item><item>desactivar silencio</item><item>quitar silencio</item><item>activar micr</item><item>reactivar</item>
     </string-array>
-    <string-array name="kw_ended">
-        <item>missed</item><item>ended</item><item>call ended</item><item>no answer</item>
-        <item>perdida</item><item>finalizada</item><item>finalizó</item><item>terminada</item><item>terminó</item><item>sin respuesta</item>
+    <string-array name="kw_deafen">
+        <item>deafen</item><item>ensordec</item>
     </string-array>
     <string-array name="kw_incoming">
         <item>incoming</item><item>is calling</item><item>calling you</item><item>ringing</item>
@@ -32,6 +30,18 @@
     </string-array>
     <string-array name="kw_ongoing">
         <item>connected</item><item>voice</item><item>in call</item><item>call</item><item>stage</item>
-        <item>conectado</item><item>voz</item><item>en llamada</item><item>llamada</item><item>escenario</item>
+        <item>conectado</item><item>conectada</item><item>voz</item><item>en llamada</item><item>llamada</item><item>escenario</item>
+    </string-array>
+    <!-- Phrases Discord puts in the title instead of the channel name, including connection phases. -->
+    <string-array name="kw_generic">
+        <item>tap to</item><item>toca para</item><item>pulsa para</item>
+        <item>voice connected</item><item>voz conectada</item><item>connected to</item><item>conectado a</item>
+        <item>in call</item><item>en llamada</item><item>discord</item>
+        <item>waiting for</item><item>connecting</item><item>authenticating</item><item>rtc</item>
+        <item>esperando</item><item>conectando</item><item>autenticando</item>
+    </string-array>
+    <string-array name="kw_ended">
+        <item>missed</item><item>ended</item><item>call ended</item><item>no answer</item>
+        <item>perdida</item><item>finalizada</item><item>finalizó</item><item>terminada</item><item>terminó</item><item>sin respuesta</item>
     </string-array>
 </resources>

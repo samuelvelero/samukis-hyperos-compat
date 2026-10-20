@@ -5,7 +5,8 @@ import android.graphics.drawable.Icon
 
 enum class CallState { INCOMING, ONGOING }
 
-enum class ActionRole { ANSWER, DECLINE, HANGUP, MUTE, OTHER }
+/** MUTE = press to mute (currently audible); UNMUTE = press to un-mute (currently muted). DEAFEN is never shown. */
+enum class ActionRole { ANSWER, DECLINE, HANGUP, MUTE, UNMUTE, DEAFEN, OTHER }
 
 class IslandAction(
     val role: ActionRole,
