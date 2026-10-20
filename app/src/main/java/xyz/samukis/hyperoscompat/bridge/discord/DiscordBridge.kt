@@ -70,12 +70,16 @@ class DiscordBridge(private val context: Context) : AppBridge {
             else -> firstSeen
         }
 
-        // "Voz conectada — General" reads better as title "General", subtitle "Voz conectada".
-        val (title, titleTail) = splitTitle(rawTitle)
-        val displayTitle = title.ifEmpty { "Discord" }
+        // Discord rotates generic titles ("Voz conectada — General", "Toca para volver a la llamada").
+        // Show the channel as the title whatever field it arrives in, and a generic phrase as subtitle.
+        val (titleHead, titleTail) = splitTitle(rawTitle)
+        val candidates = listOf(titleHead, titleTail.orEmpty(), text, sub).filter { it.isNotEmpty() }
+        val channel = candidates.firstOrNull { !kw.looksGeneric(it.lowercase()) }
+        val generic = candidates.firstOrNull { kw.looksGeneric(it.lowercase()) }
+        val displayTitle = channel ?: titleHead.ifEmpty { "Discord" }
         val subtitle = when (state) {
             CallState.INCOMING -> incomingLabel
-            CallState.ONGOING -> titleTail ?: text.ifEmpty { ongoingLabel }
+            CallState.ONGOING -> generic?.takeIf { it != displayTitle } ?: ongoingLabel
         }
 
         return IslandSpec(
@@ -123,7 +127,7 @@ class DiscordBridge(private val context: Context) : AppBridge {
     }
 
     private fun systemMuteAction(): IslandAction {
-        val muted = MicMute.isMuted(context)
+        val muted = MicMute.isMuted()
         return IslandAction(
             role = ActionRole.MUTE,
             title = context.getString(if (muted) R.string.action_unmute else R.string.action_mute),

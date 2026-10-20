@@ -17,6 +17,11 @@
         <item>mute</item><item>unmute</item><item>deafen</item><item>mic</item>
         <item>silenciar</item><item>mutear</item><item>ensordecer</item><item>micrófono</item><item>microfono</item>
     </string-array>
+    <string-array name="kw_generic">
+        <item>tap to</item><item>toca para</item><item>pulsa para</item>
+        <item>voice connected</item><item>voz conectada</item><item>connected to</item><item>conectado a</item>
+        <item>in call</item><item>en llamada</item><item>discord</item>
+    </string-array>
     <string-array name="kw_ended">
         <item>missed</item><item>ended</item><item>call ended</item><item>no answer</item>
         <item>perdida</item><item>finalizada</item><item>finalizó</item><item>terminada</item><item>terminó</item><item>sin respuesta</item>

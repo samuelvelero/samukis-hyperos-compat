@@ -64,7 +64,8 @@ class IslandPoster(private val context: Context, private val settings: Settings)
 
         val actionKeys = ArrayList<String>(spec.actions.size)
         spec.actions.forEachIndexed { i, a ->
-            val key = "act$i"
+            // The glyph is part of the key so HyperOS cannot reuse a cached icon when a toggle flips.
+            val key = "act${i}_${a.iconRes}_${a.role.ordinal}"
             val intent = if (sourceKey != null && a.sourceIndex >= 0) {
                 ActionReceiver.pendingIntent(context, id, i, sourceKey, a.sourceIndex)
             } else a.intent
@@ -89,11 +90,11 @@ class IslandPoster(private val context: Context, private val settings: Settings)
         val counting = spec.state == CallState.ONGOING && spec.startTime > 0
         val timer = if (counting) TimerInfo(1, spec.startTime, now - spec.startTime, now) else null
 
+        // No appPkg: it makes HyperOS overlay a small app badge on the avatar, which the user found noisy.
         island.setChatInfo(
             title = spec.title,
             content = spec.subtitle,
             pictureKey = picKey,
-            appPkg = pkg,
             timer = timer,
             actionKeys = actionKeys.ifEmpty { null },
         )

@@ -13,6 +13,7 @@ class CallKeywords(context: Context) {
     private val incoming = load(context, R.array.kw_incoming)
     private val ongoing = load(context, R.array.kw_ongoing)
     private val ended = load(context, R.array.kw_ended)
+    private val generic = load(context, R.array.kw_generic)
 
     fun roleOf(title: CharSequence?): ActionRole {
         val t = title?.toString()?.lowercase()?.trim().orEmpty()
@@ -29,6 +30,9 @@ class CallKeywords(context: Context) {
     fun looksIncoming(text: String): Boolean = incoming.any { text.contains(it) }
     fun looksOngoing(text: String): Boolean = ongoing.any { text.contains(it) }
     fun looksEnded(text: String): Boolean = ended.any { text.contains(it) }
+
+    /** Boilerplate the app shows instead of a channel name ("Tap to return to the call"). */
+    fun looksGeneric(text: String): Boolean = generic.any { text.contains(it) }
 
     private fun load(context: Context, @ArrayRes res: Int): List<String> =
         context.resources.getStringArray(res).map { it.lowercase() }

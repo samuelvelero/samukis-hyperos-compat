@@ -41,6 +41,7 @@ class IslandSpec(
         for (a in actions) {
             h = h * 31 + a.role.ordinal
             h = h * 31 + a.title.toString().hashCode()
+            h = h * 31 + a.iconRes
         }
         return h
     }

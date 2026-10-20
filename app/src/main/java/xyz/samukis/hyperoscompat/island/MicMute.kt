@@ -5,23 +5,31 @@ import android.media.AudioManager
 
 /**
  * System-level microphone mute, used when the source app offers no mute action of its own.
- * Discord keeps rendering itself as unmuted; what changes is that the mic feeds silence.
- * We only ever un-mute what we muted, and we release it as soon as the call island goes away.
+ *
+ * Discord listens to the system mute flag and mirrors it as its own self-mute, but it also appears
+ * to reset the flag after reading it, so the flag cannot be trusted as our state. We keep our own
+ * notion of "muted by us" and only ever issue explicit mute / un-mute transitions from it.
  */
 object MicMute {
-    @Volatile private var mutedByUs = false
+    @Volatile var mutedByUs = false
+        private set
 
-    fun isMuted(context: Context): Boolean =
+    /** Our view of the state, which is what the island button reflects. */
+    fun isMuted(): Boolean = mutedByUs
+
+    fun systemFlag(context: Context): Boolean =
         context.getSystemService(AudioManager::class.java).isMicrophoneMute
 
-    /** Flips the mute state. Returns the new state. */
-    fun toggle(context: Context): Boolean {
+    /** Explicit transition. Returns a diagnostic line for the inspector. */
+    fun set(context: Context, mute: Boolean): String {
         val am = context.getSystemService(AudioManager::class.java)
-        val target = !am.isMicrophoneMute
-        am.isMicrophoneMute = target
-        mutedByUs = target
-        return am.isMicrophoneMute
+        val before = am.isMicrophoneMute
+        am.isMicrophoneMute = mute
+        mutedByUs = mute
+        return "mic set=$mute (flag before=$before, after=${am.isMicrophoneMute})"
     }
+
+    fun toggle(context: Context): String = set(context, !mutedByUs)
 
     /** Un-mutes only if the mute was ours. Safe to call often. */
     fun release(context: Context) {
