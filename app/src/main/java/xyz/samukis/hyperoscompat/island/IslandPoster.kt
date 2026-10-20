@@ -8,7 +8,6 @@ import android.content.Intent
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Typeface
 import android.graphics.drawable.Icon
 import androidx.annotation.DrawableRes
 import androidx.appcompat.content.res.AppCompatResources
@@ -41,7 +40,6 @@ class IslandPoster(private val context: Context, private val settings: Settings)
     private val nm = context.getSystemService(NotificationManager::class.java)
     private val iconCache = HashMap<String, Icon>()
     private val roundIconCache = HashMap<String, Icon>()
-    private val avatarCache = HashMap<String, Icon>()
 
     /**
      * @param sourceKey key of the source notification; when given, island buttons are routed through
@@ -60,10 +58,13 @@ class IslandPoster(private val context: Context, private val settings: Settings)
             .setIslandFirstFloat(spec.state == CallState.INCOMING)
             .setShowNotification(settings.showInShade)
 
-        // Avatar: the source's large icon if it sends one, else channel initials; the app itself is the badge.
-        val avatar = spec.avatar ?: if (pkg != context.packageName) initialsAvatar(spec.title, spec.accentColor) else appIcon(pkg)
+        // Avatar: the source's large icon if it sends one, else the source app's icon. In the collapsed
+        // pill this is the only thing visible, so it must say "Discord", not the channel name.
+        val avatar = spec.avatar ?: appIcon(pkg)
         val picKey = "avatar"
         island.addPicture(HyperPicture(picKey, avatar))
+        // Ask HyperOS not to badge the avatar with a small app icon.
+        island.setShowSmallIcon(false)
 
         val actionKeys = ArrayList<String>(spec.actions.size)
         spec.actions.forEachIndexed { i, a ->
@@ -93,7 +94,7 @@ class IslandPoster(private val context: Context, private val settings: Settings)
         val counting = spec.state == CallState.ONGOING && spec.startTime > 0
         val timer = if (counting) TimerInfo(1, spec.startTime, now - spec.startTime, now) else null
 
-        // appPkg = the source app, so the small badge HyperOS always draws shows Discord, not us.
+        // appPkg = the source app: if HyperOS insists on drawing the badge anyway, it shows Discord, not us.
         island.setChatInfo(
             title = spec.title,
             content = spec.subtitle,
@@ -179,35 +180,6 @@ class IslandPoster(private val context: Context, private val settings: Settings)
         ActionRole.MUTE -> R.drawable.ic_mic
         ActionRole.UNMUTE -> R.drawable.ic_mic_off
         ActionRole.DEAFEN, ActionRole.OTHER -> R.drawable.ic_stat_island
-    }
-
-    /**
-     * Discord sends no large icon, so the avatar would fall back to the app icon and HyperOS would
-     * badge it with the same app icon. Instead: channel initials on the accent colour, badge = app.
-     */
-    private fun initialsAvatar(name: String, accentHex: String): Icon = avatarCache.getOrPut("$name/$accentHex") {
-        val letters = name.filter { it.isLetterOrDigit() }.let { clean ->
-            if (clean.length <= 3) clean.uppercase() else {
-                val words = name.split(' ', '-', '_', '┃', '|', '·').map { w -> w.filter { it.isLetterOrDigit() } }.filter { it.isNotEmpty() }
-                if (words.size >= 2) (words[0].take(1) + words[1].take(1)).uppercase() else clean.take(2).uppercase()
-            }
-        }.ifEmpty { "D" }
-        val size = 192
-        val bitmap = createBitmap(size, size)
-        val canvas = Canvas(bitmap)
-        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = try { accentHex.toColorInt() } catch (_: Exception) { 0xFF5865F2.toInt() }
-        }
-        canvas.drawCircle(size / 2f, size / 2f, size / 2f, bg)
-        val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            textAlign = Paint.Align.CENTER
-            textSize = if (letters.length >= 3) size * 0.36f else size * 0.46f
-        }
-        val baseline = size / 2f - (text.descent() + text.ascent()) / 2f
-        canvas.drawText(letters, size / 2f, baseline, text)
-        Icon.createWithBitmap(bitmap)
     }
 
     /** White glyph centred on a filled circle, rendered once per (glyph, colour) and cached. */
