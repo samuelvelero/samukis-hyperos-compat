@@ -8,6 +8,7 @@ import xyz.samukis.hyperoscompat.bridge.ActionRole.MESSAGE
 import xyz.samukis.hyperoscompat.bridge.ActionRole.OTHER
 import xyz.samukis.hyperoscompat.bridge.ActionRole.SHARE
 import xyz.samukis.hyperoscompat.bridge.BaseBridge
+import xyz.samukis.hyperoscompat.bridge.BridgeCategory
 import xyz.samukis.hyperoscompat.bridge.IslandKind
 import xyz.samukis.hyperoscompat.bridge.IslandSpec
 import xyz.samukis.hyperoscompat.bridge.Notif
@@ -22,8 +23,9 @@ class DeliveryBridge(
     context: Context,
     packageName: String,
     @StringRes nameRes: Int,
+    @StringRes descriptionRes: Int,
     accentColor: String,
-) : BaseBridge(context, packageName, nameRes, accentColor) {
+) : BaseBridge(context, packageName, nameRes, descriptionRes, BridgeCategory.TRANSPORT, accentColor) {
 
     override fun translate(x: Notif, firstSeen: Long): IslandSpec? {
         val h = x.haystack

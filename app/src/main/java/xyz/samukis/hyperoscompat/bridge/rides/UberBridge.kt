@@ -7,6 +7,7 @@ import xyz.samukis.hyperoscompat.bridge.ActionRole.MESSAGE
 import xyz.samukis.hyperoscompat.bridge.ActionRole.OTHER
 import xyz.samukis.hyperoscompat.bridge.ActionRole.SHARE
 import xyz.samukis.hyperoscompat.bridge.BaseBridge
+import xyz.samukis.hyperoscompat.bridge.BridgeCategory
 import xyz.samukis.hyperoscompat.bridge.IslandKind
 import xyz.samukis.hyperoscompat.bridge.IslandSpec
 import xyz.samukis.hyperoscompat.bridge.Notif
@@ -21,6 +22,8 @@ class UberBridge(context: Context) : BaseBridge(
     context,
     packageName = "com.ubercab",
     nameRes = R.string.app_uber,
+    descriptionRes = R.string.desc_uber,
+    category = BridgeCategory.TRANSPORT,
     accentColor = "#FFFFFF",
 ) {
     override fun translate(x: Notif, firstSeen: Long): IslandSpec? {

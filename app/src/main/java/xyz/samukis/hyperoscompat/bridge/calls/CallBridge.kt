@@ -13,6 +13,7 @@ import xyz.samukis.hyperoscompat.bridge.ActionRole.OTHER
 import xyz.samukis.hyperoscompat.bridge.ActionRole.SPEAKER
 import xyz.samukis.hyperoscompat.bridge.ActionRole.UNMUTE
 import xyz.samukis.hyperoscompat.bridge.BaseBridge
+import xyz.samukis.hyperoscompat.bridge.BridgeCategory
 import xyz.samukis.hyperoscompat.bridge.IslandKind
 import xyz.samukis.hyperoscompat.bridge.IslandSpec
 import xyz.samukis.hyperoscompat.bridge.Notif
@@ -26,9 +27,11 @@ open class CallBridge(
     context: Context,
     packageName: String,
     @StringRes nameRes: Int,
+    @StringRes descriptionRes: Int,
     accentColor: String,
     packages: Set<String> = setOf(packageName),
-) : BaseBridge(context, packageName, nameRes, accentColor, packages) {
+    tested: Boolean = false,
+) : BaseBridge(context, packageName, nameRes, descriptionRes, BridgeCategory.CALLS, accentColor, packages, tested) {
 
     override fun translate(x: Notif, firstSeen: Long): IslandSpec? {
         // "Missed call" / "Call ended" style notifications are history, not a live call.

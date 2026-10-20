@@ -1,26 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Samukis HyperOS Compatibility Layer</string>
-    <string name="app_subtitle">Brings third-party app events into the HyperOS Hyper Island. Event-driven, no background polling.</string>
+    <string name="app_title">Samukis</string>
+    <string name="app_subtitle">Compatibility layer for Hyper Island</string>
 
     <string name="channel_island">Hyper Island bridge</string>
     <string name="channel_island_desc">Silent notifications that HyperOS renders as a Hyper Island.</string>
 
-    <string name="section_status">Status</string>
-    <string name="status_listener">Notification access</string>
-    <string name="status_focus">Focus notifications permission</string>
-    <string name="status_island">Hyper Island supported by this ROM</string>
-    <string name="status_service">Bridge service connected</string>
-    <string name="status_ok">OK</string>
-    <string name="status_missing">Missing</string>
-    <string name="status_no">No</string>
-    <string name="status_yes">Yes</string>
+    <!-- Hero: one card that answers "does it work?" and offers the single next step -->
+    <string name="hero_ok_title">All set</string>
+    <string name="hero_ok_body">Islands appear on their own when an app does something. Try one now.</string>
+    <string name="hero_blocked_title">One step left</string>
+    <string name="hero_warn_title">Working, with a caveat</string>
+    <string name="blocker_post">Allow this app\'s notifications: islands are delivered as focus notifications.</string>
+    <string name="blocker_listener">Grant notification access so the app can see other apps\' calls and transfers.</string>
+    <string name="blocker_focus">Turn on “Focus notifications” in this app\'s notification settings (on some ROMs: “Show in status bar”).</string>
+    <string name="blocker_service">The bridge service is not connected. It retries by itself; if it stays off, restart the phone.</string>
+    <string name="blocker_island">This ROM does not expose Hyper Island. The app will post regular notifications instead.</string>
+    <string name="action_allow">Allow</string>
     <string name="action_grant">Grant</string>
     <string name="action_open">Open</string>
-    <string name="focus_hint">In the app notification settings, enable “Focus notifications” (may be called “Show in status bar”).</string>
+    <string name="action_test_island">Try an island</string>
+    <string name="action_rebind">Restart bridge service</string>
+    <string name="check_post">App notifications</string>
+    <string name="status_listener">Notification access</string>
+    <string name="status_focus">Focus notifications</string>
+    <string name="status_service">Bridge service</string>
+    <string name="status_island">Hyper Island on this ROM</string>
 
+    <!-- Apps -->
     <string name="section_apps">Apps</string>
-    <string name="apps_hint">More apps can be added later; each one is a small translator in the code.</string>
+    <string name="apps_hint">Switch off the ones you do not want on the island.</string>
+    <string name="cat_calls">Calls and meetings</string>
+    <string name="cat_transport">Rides and deliveries</string>
+    <string name="cat_transfers">Uploads and downloads</string>
     <string name="app_discord">Discord</string>
     <string name="app_uber">Uber</string>
     <string name="app_meet">Google Meet</string>
@@ -32,21 +45,32 @@
     <string name="app_instagram">Instagram</string>
     <string name="app_pedidosya">PedidosYa</string>
     <string name="app_rappi">Rappi</string>
+    <string name="desc_discord">Voice channel with timer, mute and disconnect</string>
+    <string name="desc_uber">Driver on the way, ETA, PIN and arrival</string>
+    <string name="desc_meet">Meeting timer, mute, leave, “starts soon” reminder</string>
+    <string name="desc_whatsapp">Calls and voice-note recording</string>
+    <string name="desc_transfer">Progress ring and time left</string>
+    <string name="desc_play">Download progress for installs and updates</string>
+    <string name="desc_instagram">Story and post upload progress</string>
+    <string name="desc_delivery">Order status with ETA</string>
+    <string name="badge_tested">Tested</string>
+    <string name="badge_beta">Beta</string>
     <string name="app_not_installed">Not installed</string>
 
-    <string name="section_tools">Tools</string>
-    <string name="pref_show_in_shade">Also show the island notification in the shade</string>
-    <string name="pref_inspector">Notification inspector (logs matching notifications)</string>
-    <string name="action_test_island">Test island (20 s)</string>
+    <!-- Diagnostics -->
+    <string name="section_diagnostics">Diagnostics</string>
+    <string name="diag_hint">Only needed when something does not show up.</string>
+    <string name="pref_show_in_shade">Also show islands in the notification shade</string>
+    <string name="pref_inspector">Log matching notifications (inspector)</string>
     <string name="action_open_inspector">Open inspector</string>
-    <string name="action_rebind">Restart bridge service</string>
     <string name="toast_rebind">Rebind requested</string>
     <string name="toast_need_post_permission">Allow notifications for this app first</string>
-    <string name="toast_test_posted">Test island posted</string>
+    <string name="toast_test_posted">Test island posted for 20 seconds</string>
 
     <string name="footer_version">Version %1$s · updates via Obtainium</string>
     <string name="footer_repo">github.com/samuelvelero/samukis-hyperos-compat</string>
 
+    <!-- Island texts -->
     <string name="call_incoming">Incoming call</string>
     <string name="call_ongoing">In call</string>
     <string name="recording_voice_note">Recording voice note</string>
@@ -57,8 +81,9 @@
     <string name="demo_text">Test island</string>
     <string name="demo_dismiss">Dismiss</string>
 
+    <!-- Inspector -->
     <string name="inspector_title">Notification inspector</string>
-    <string name="inspector_empty">Nothing logged yet. Enable the inspector on the main screen, then trigger a Discord call.</string>
+    <string name="inspector_empty">Nothing logged yet. Enable the inspector on the main screen, then use one of the supported apps.</string>
     <string name="action_copy">Copy</string>
     <string name="action_clear">Clear</string>
     <string name="action_refresh">Refresh</string>

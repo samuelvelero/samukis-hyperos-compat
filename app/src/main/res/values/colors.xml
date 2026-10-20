@@ -2,5 +2,7 @@
 <resources>
     <color name="ic_launcher_background">#1E1F22</color>
     <color name="status_ok">#2E7D32</color>
+    <color name="status_warn">#B26A00</color>
     <color name="status_bad">#C62828</color>
+    <color name="status_muted">#757575</color>
 </resources>

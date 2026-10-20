@@ -1,36 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_subtitle">Lleva eventos de apps de terceros a la Hyper Island de HyperOS. Reacciona a eventos, sin sondeo en segundo plano.</string>
+    <string name="app_subtitle">Capa de compatibilidad para Hyper Island</string>
 
     <string name="channel_island">Puente a Hyper Island</string>
     <string name="channel_island_desc">Notificaciones silenciosas que HyperOS muestra como Hyper Island.</string>
 
-    <string name="section_status">Estado</string>
-    <string name="status_listener">Acceso a notificaciones</string>
-    <string name="status_focus">Permiso de notificaciones de foco</string>
-    <string name="status_island">Hyper Island compatible en esta ROM</string>
-    <string name="status_service">Servicio puente conectado</string>
-    <string name="status_ok">OK</string>
-    <string name="status_missing">Falta</string>
-    <string name="status_no">No</string>
-    <string name="status_yes">Sí</string>
+    <string name="hero_ok_title">Todo listo</string>
+    <string name="hero_ok_body">Las islas aparecen solas cuando una app hace algo. Prueba una ahora.</string>
+    <string name="hero_blocked_title">Falta un paso</string>
+    <string name="hero_warn_title">Funciona, con una salvedad</string>
+    <string name="blocker_post">Permite las notificaciones de esta app: las islas se entregan como notificaciones de foco.</string>
+    <string name="blocker_listener">Concede acceso a notificaciones para que la app vea las llamadas y transferencias de otras apps.</string>
+    <string name="blocker_focus">Activa “Notificaciones de foco” en los ajustes de notificación de esta app (en algunas ROM: “Mostrar en la barra de estado”).</string>
+    <string name="blocker_service">El servicio puente no está conectado. Se reintenta solo; si sigue apagado, reinicia el teléfono.</string>
+    <string name="blocker_island">Esta ROM no expone Hyper Island. La app enviará notificaciones normales.</string>
+    <string name="action_allow">Permitir</string>
     <string name="action_grant">Conceder</string>
     <string name="action_open">Abrir</string>
-    <string name="focus_hint">En los ajustes de notificaciones de la app, activa “Notificaciones de foco” (puede llamarse “Mostrar en la barra de estado”).</string>
+    <string name="action_test_island">Probar una isla</string>
+    <string name="action_rebind">Reiniciar servicio puente</string>
+    <string name="check_post">Notificaciones de la app</string>
+    <string name="status_listener">Acceso a notificaciones</string>
+    <string name="status_focus">Notificaciones de foco</string>
+    <string name="status_service">Servicio puente</string>
+    <string name="status_island">Hyper Island en esta ROM</string>
 
     <string name="section_apps">Apps</string>
-    <string name="apps_hint">Se pueden agregar más apps después; cada una es un pequeño traductor en el código.</string>
+    <string name="apps_hint">Desactiva las que no quieras ver en la isla.</string>
+    <string name="cat_calls">Llamadas y reuniones</string>
+    <string name="cat_transport">Viajes y pedidos</string>
+    <string name="cat_transfers">Subidas y descargas</string>
+    <string name="desc_discord">Canal de voz con cronómetro, silenciar y desconectar</string>
+    <string name="desc_uber">Conductor en camino, ETA, PIN y llegada</string>
+    <string name="desc_meet">Cronómetro de reunión, silenciar, salir, aviso de “empieza pronto”</string>
+    <string name="desc_whatsapp">Llamadas y grabación de notas de voz</string>
+    <string name="desc_transfer">Anillo de progreso y tiempo restante</string>
+    <string name="desc_play">Progreso de descargas e instalaciones</string>
+    <string name="desc_instagram">Progreso de subida de historias y publicaciones</string>
+    <string name="desc_delivery">Estado del pedido con ETA</string>
+    <string name="badge_tested">Probado</string>
+    <string name="badge_beta">Beta</string>
     <string name="app_not_installed">No instalada</string>
 
-    <string name="section_tools">Herramientas</string>
-    <string name="pref_show_in_shade">Mostrar también la notificación de la isla en el panel</string>
-    <string name="pref_inspector">Inspector de notificaciones (registra las notificaciones que coinciden)</string>
-    <string name="action_test_island">Probar isla (20 s)</string>
+    <string name="section_diagnostics">Diagnóstico</string>
+    <string name="diag_hint">Solo hace falta cuando algo no aparece.</string>
+    <string name="pref_show_in_shade">Mostrar también las islas en el panel de notificaciones</string>
+    <string name="pref_inspector">Registrar notificaciones reconocidas (inspector)</string>
     <string name="action_open_inspector">Abrir inspector</string>
-    <string name="action_rebind">Reiniciar servicio puente</string>
     <string name="toast_rebind">Reinicio solicitado</string>
     <string name="toast_need_post_permission">Primero permite las notificaciones de esta app</string>
-    <string name="toast_test_posted">Isla de prueba enviada</string>
+    <string name="toast_test_posted">Isla de prueba enviada por 20 segundos</string>
 
     <string name="footer_version">Versión %1$s · actualizaciones vía Obtainium</string>
 
@@ -44,7 +63,7 @@
     <string name="demo_dismiss">Cerrar</string>
 
     <string name="inspector_title">Inspector de notificaciones</string>
-    <string name="inspector_empty">Aún no hay nada registrado. Activa el inspector en la pantalla principal y provoca una llamada de Discord.</string>
+    <string name="inspector_empty">Aún no hay nada registrado. Activa el inspector en la pantalla principal y usa alguna de las apps soportadas.</string>
     <string name="action_copy">Copiar</string>
     <string name="action_clear">Limpiar</string>
     <string name="action_refresh">Actualizar</string>

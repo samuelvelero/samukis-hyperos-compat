@@ -9,8 +9,11 @@ abstract class BaseBridge(
     protected val context: Context,
     final override val packageName: String,
     @StringRes final override val nameRes: Int,
+    @StringRes final override val descriptionRes: Int,
+    final override val category: BridgeCategory,
     final override val accentColor: String,
     final override val packages: Set<String> = setOf(packageName),
+    final override val tested: Boolean = false,
 ) : AppBridge {
     protected val kw: Keywords = Keywords.get(context)
 

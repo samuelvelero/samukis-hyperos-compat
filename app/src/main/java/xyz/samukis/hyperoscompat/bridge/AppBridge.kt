@@ -21,6 +21,11 @@ interface AppBridge {
     /** Every package this bridge handles (e.g. WhatsApp and WhatsApp Business). */
     val packages: Set<String> get() = setOf(packageName)
     @get:StringRes val nameRes: Int
+    /** One line telling the user what the island will show for this app. */
+    @get:StringRes val descriptionRes: Int
+    val category: BridgeCategory
+    /** True once the translator has been verified against real notifications on a device. */
+    val tested: Boolean
     val accentColor: String
 
     /**
@@ -39,13 +44,13 @@ object BridgeRegistry {
             UberBridge(c),
             MeetBridge(c),
             WhatsAppBridge(c),
-            ProgressBridge(c, "com.google.android.apps.docs", R.string.app_drive, "#1EA362"),
-            ProgressBridge(c, "com.google.android.apps.photos", R.string.app_photos, "#F9AB00"),
-            ProgressBridge(c, "com.miui.cloudservice", R.string.app_micloud, "#FF6900"),
-            ProgressBridge(c, "com.android.vending", R.string.app_play, "#00A173"),
-            ProgressBridge(c, "com.instagram.android", R.string.app_instagram, "#E1306C"),
-            DeliveryBridge(c, "com.pedidosya", R.string.app_pedidosya, "#FA0050"),
-            DeliveryBridge(c, "com.grability.rappi", R.string.app_rappi, "#FF441F"),
+            ProgressBridge(c, "com.google.android.apps.docs", R.string.app_drive, R.string.desc_transfer, "#1EA362"),
+            ProgressBridge(c, "com.google.android.apps.photos", R.string.app_photos, R.string.desc_transfer, "#F9AB00"),
+            ProgressBridge(c, "com.miui.cloudservice", R.string.app_micloud, R.string.desc_transfer, "#FF6900"),
+            ProgressBridge(c, "com.android.vending", R.string.app_play, R.string.desc_play, "#00A173"),
+            ProgressBridge(c, "com.instagram.android", R.string.app_instagram, R.string.desc_instagram, "#E1306C"),
+            DeliveryBridge(c, "com.pedidosya", R.string.app_pedidosya, R.string.desc_delivery, "#FA0050"),
+            DeliveryBridge(c, "com.grability.rappi", R.string.app_rappi, R.string.desc_delivery, "#FF441F"),
         )
     }
 }

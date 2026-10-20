@@ -6,6 +6,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -14,6 +15,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.AttrRes
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationManagerCompat
@@ -22,23 +25,40 @@ import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import com.google.android.material.color.MaterialColors
 import xyz.samukis.hyperoscompat.BuildConfig
 import xyz.samukis.hyperoscompat.R
+import xyz.samukis.hyperoscompat.bridge.AppBridge
+import xyz.samukis.hyperoscompat.bridge.BridgeCategory
 import xyz.samukis.hyperoscompat.bridge.BridgeRegistry
 import xyz.samukis.hyperoscompat.databinding.ActivityMainBinding
 import xyz.samukis.hyperoscompat.databinding.ItemAppBinding
-import xyz.samukis.hyperoscompat.databinding.ItemStatusBinding
+import xyz.samukis.hyperoscompat.databinding.ItemAppGroupBinding
+import xyz.samukis.hyperoscompat.databinding.ItemCheckBinding
+import xyz.samukis.hyperoscompat.databinding.ItemSectionBinding
 import xyz.samukis.hyperoscompat.island.IslandPoster
 import xyz.samukis.hyperoscompat.prefs.Settings
 import xyz.samukis.hyperoscompat.service.IslandBridgeService
+import com.google.android.material.R as MR
 
+/**
+ * Screen order follows what the user needs, in order:
+ * 1. Does it work? One hero card with a verdict and the single next step.
+ * 2. What will I get? The apps, grouped, each saying what its island shows.
+ * 3. Something is off: diagnostics, last, because they only matter on a bad day.
+ */
 class MainActivity : AppCompatActivity() {
     private lateinit var b: ActivityMainBinding
     private lateinit var settings: Settings
     private val handler = Handler(Looper.getMainLooper())
 
     private val requestPostNotifications =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { refreshStatus() }
+
+    /** One prerequisite: its label, whether it holds, and how to fix it (null = informational). */
+    private class Check(@StringRes val label: Int, val ok: Boolean, val fix: (() -> Unit)?)
+
+    private enum class Hero { OK, WARN, BLOCKED }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,22 +72,20 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        if (!hasPostPermission()) requestPostNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
-
-        setupStatusRows()
         setupApps()
-        setupTools()
-
+        setupDiagnostics()
         b.footer.text = getString(R.string.footer_version, BuildConfig.VERSION_NAME)
         b.footerRepo.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, "https://${getString(R.string.footer_repo)}".toUri()))
         }
+
+        if (!hasPostPermission()) requestPostNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     override fun onResume() {
         super.onResume()
         refreshStatus()
-        // Opening the app is a good moment to drop islands whose call already ended.
+        // Opening the app is a good moment to drop islands whose source already ended.
         IslandBridgeService.instance?.resync()
         ensureServiceBound()
     }
@@ -75,6 +93,115 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         handler.removeCallbacksAndMessages(null)
         super.onPause()
+    }
+
+    // ---------------------------------------------------------------- hero + checks
+
+    private fun refreshStatus() {
+        val post = hasPostPermission()
+        val listener = NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
+        val focus = HyperOsChecks.hasFocusPermission(this)
+        val service = IslandBridgeService.connected
+        val island = HyperOsChecks.isIslandSupported()
+
+        val askPost: () -> Unit = { requestPostNotifications.launch(Manifest.permission.POST_NOTIFICATIONS) }
+        val rebind: () -> Unit = {
+            IslandBridgeService.requestRebind(this)
+            Toast.makeText(this, R.string.toast_rebind, Toast.LENGTH_SHORT).show()
+            handler.postDelayed({ refreshStatus() }, 2500)
+        }
+
+        renderChecks(
+            listOf(
+                Check(R.string.check_post, post, askPost),
+                Check(R.string.status_listener, listener, ::openListenerSettings),
+                Check(R.string.status_focus, focus, ::openAppNotificationSettings),
+                Check(R.string.status_service, service, if (listener) rebind else null),
+                Check(R.string.status_island, island, null),
+            )
+        )
+
+        // The single most important next step, in the order a new install hits them.
+        when {
+            !post -> hero(Hero.BLOCKED, R.string.hero_blocked_title, R.string.blocker_post, R.string.action_allow, askPost)
+            !listener -> hero(Hero.BLOCKED, R.string.hero_blocked_title, R.string.blocker_listener, R.string.action_grant, ::openListenerSettings)
+            !focus -> hero(Hero.BLOCKED, R.string.hero_blocked_title, R.string.blocker_focus, R.string.action_open, ::openAppNotificationSettings)
+            !service -> hero(Hero.BLOCKED, R.string.hero_blocked_title, R.string.blocker_service, R.string.action_rebind, rebind)
+            !island -> hero(Hero.WARN, R.string.hero_warn_title, R.string.blocker_island, R.string.action_test_island, ::postDemo)
+            else -> hero(Hero.OK, R.string.hero_ok_title, R.string.hero_ok_body, R.string.action_test_island, ::postDemo)
+        }
+    }
+
+    private fun hero(state: Hero, @StringRes title: Int, @StringRes body: Int, @StringRes button: Int, onClick: () -> Unit) {
+        val (bgAttr, fgAttr, icon) = when (state) {
+            Hero.OK -> Triple(MR.attr.colorPrimaryContainer, MR.attr.colorOnPrimaryContainer, R.drawable.ic_check_circle)
+            Hero.WARN -> Triple(MR.attr.colorTertiaryContainer, MR.attr.colorOnTertiaryContainer, R.drawable.ic_info_circle)
+            Hero.BLOCKED -> Triple(MR.attr.colorErrorContainer, MR.attr.colorOnErrorContainer, R.drawable.ic_error_circle)
+        }
+        val fg = color(fgAttr)
+        b.heroCard.setCardBackgroundColor(color(bgAttr))
+        b.heroIcon.setImageResource(icon)
+        b.heroIcon.imageTintList = ColorStateList.valueOf(fg)
+        b.heroTitle.setText(title)
+        b.heroTitle.setTextColor(fg)
+        b.heroBody.setText(body)
+        b.heroBody.setTextColor(fg)
+        b.heroButton.setText(button)
+        b.heroButton.setOnClickListener { onClick() }
+    }
+
+    private fun renderChecks(checks: List<Check>) {
+        val inflater = LayoutInflater.from(this)
+        b.checks.removeAllViews()
+        for (c in checks) {
+            val row = ItemCheckBinding.inflate(inflater, b.checks, true)
+            row.label.setText(c.label)
+            val actionable = !c.ok && c.fix != null
+            val (iconRes, tint) = when {
+                c.ok -> R.drawable.ic_check_circle to R.color.status_ok
+                actionable -> R.drawable.ic_error_circle to R.color.status_bad
+                else -> R.drawable.ic_info_circle to R.color.status_warn
+            }
+            row.icon.setImageResource(iconRes)
+            row.icon.imageTintList = ColorStateList.valueOf(ContextCompat.getColor(this, tint))
+            row.label.setTextColor(color(MR.attr.colorOnSurface))
+            row.chevron.visibility = if (actionable) View.VISIBLE else View.GONE
+            row.chevron.imageTintList = ColorStateList.valueOf(color(MR.attr.colorOnSurfaceVariant))
+            row.root.isClickable = actionable
+            row.root.setOnClickListener(if (actionable) View.OnClickListener { c.fix?.invoke() } else null)
+        }
+    }
+
+    private fun hasPostPermission() =
+        ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+
+    private fun openListenerSettings() {
+        val component = ComponentName(this, IslandBridgeService::class.java)
+        val detail = Intent(SysSettings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
+            .putExtra(SysSettings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, component.flattenToString())
+        try {
+            startActivity(detail)
+        } catch (_: Exception) {
+            startActivity(Intent(SysSettings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        }
+    }
+
+    private fun openAppNotificationSettings() {
+        startActivity(
+            Intent(SysSettings.ACTION_APP_NOTIFICATION_SETTINGS)
+                .putExtra(SysSettings.EXTRA_APP_PACKAGE, packageName)
+        )
+    }
+
+    private fun postDemo() {
+        if (!hasPostPermission()) {
+            Toast.makeText(this, R.string.toast_need_post_permission, Toast.LENGTH_SHORT).show()
+            requestPostNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+            return
+        }
+        IslandPoster(this, settings).postDemo()
+        Toast.makeText(this, R.string.toast_test_posted, Toast.LENGTH_SHORT).show()
     }
 
     /**
@@ -99,115 +226,79 @@ class MainActivity : AppCompatActivity() {
         }, 2500)
     }
 
-    private fun hasPostPermission() =
-        ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-
-    private fun setupStatusRows() {
-        b.statusListener.label.setText(R.string.status_listener)
-        b.statusListener.button.setText(R.string.action_grant)
-        b.statusListener.button.setOnClickListener { openListenerSettings() }
-
-        b.statusFocus.label.setText(R.string.status_focus)
-        b.statusFocus.button.setText(R.string.action_open)
-        b.statusFocus.button.setOnClickListener {
-            startActivity(
-                Intent(SysSettings.ACTION_APP_NOTIFICATION_SETTINGS)
-                    .putExtra(SysSettings.EXTRA_APP_PACKAGE, packageName)
-            )
-        }
-
-        b.statusIsland.label.setText(R.string.status_island)
-        b.statusService.label.setText(R.string.status_service)
-    }
-
-    private fun refreshStatus() {
-        val listenerOk = NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
-        setStatus(b.statusListener, listenerOk, showButton = !listenerOk)
-
-        val focusOk = HyperOsChecks.hasFocusPermission(this)
-        setStatus(b.statusFocus, focusOk, showButton = true)
-        b.focusHint.visibility = if (focusOk) View.GONE else View.VISIBLE
-
-        setStatus(
-            b.statusIsland, HyperOsChecks.isIslandSupported(), showButton = false,
-            okText = R.string.status_yes, badText = R.string.status_no,
-        )
-        setStatus(
-            b.statusService, IslandBridgeService.connected, showButton = false,
-            okText = R.string.status_yes, badText = R.string.status_no,
-        )
-    }
-
-    private fun setStatus(
-        row: ItemStatusBinding,
-        ok: Boolean,
-        showButton: Boolean,
-        @StringRes okText: Int = R.string.status_ok,
-        @StringRes badText: Int = R.string.status_missing,
-    ) {
-        row.value.setText(if (ok) okText else badText)
-        row.value.setTextColor(ContextCompat.getColor(this, if (ok) R.color.status_ok else R.color.status_bad))
-        row.button.visibility = if (showButton) View.VISIBLE else View.GONE
-    }
-
-    private fun openListenerSettings() {
-        val component = ComponentName(this, IslandBridgeService::class.java)
-        val detail = Intent(SysSettings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
-            .putExtra(SysSettings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, component.flattenToString())
-        try {
-            startActivity(detail)
-        } catch (_: Exception) {
-            startActivity(Intent(SysSettings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-        }
-    }
+    // ---------------------------------------------------------------- apps
 
     private fun setupApps() {
         val inflater = LayoutInflater.from(this)
         b.appsContainer.removeAllViews()
-        for (bridge in BridgeRegistry.all(this)) {
-            val row = ItemAppBinding.inflate(inflater, b.appsContainer, true)
-            row.name.setText(bridge.nameRes)
-            val installedPkg = bridge.packages.firstOrNull { pkg ->
-                try { packageManager.getApplicationInfo(pkg, 0); true } catch (_: PackageManager.NameNotFoundException) { false }
-            }
-            if (installedPkg != null) {
-                row.icon.setImageDrawable(packageManager.getApplicationIcon(installedPkg))
-            } else {
-                row.icon.setImageResource(R.mipmap.ic_launcher)
-                row.icon.alpha = 0.4f
-            }
-            row.detail.text = installedPkg ?: getString(R.string.app_not_installed)
-            row.toggle.isEnabled = installedPkg != null
-            row.toggle.isChecked = settings.isAppEnabled(bridge.packageName)
-            row.toggle.setOnCheckedChangeListener { _, checked ->
-                settings.setAppEnabled(bridge.packageName, checked)
+        val bridges = BridgeRegistry.all(this)
+        for (category in BridgeCategory.entries) {
+            val group = bridges.filter { it.category == category }
+            if (group.isEmpty()) continue
+            ItemSectionBinding.inflate(inflater, b.appsContainer, true).title.setText(category.titleRes)
+            val card = ItemAppGroupBinding.inflate(inflater, b.appsContainer, true)
+            // Installed apps first; the rest stay visible so the user knows what else is supported.
+            val ordered = group.sortedBy { if (installedPackage(it) == null) 1 else 0 }
+            ordered.forEachIndexed { i, bridge ->
+                bindAppRow(ItemAppBinding.inflate(inflater, card.rows, true), bridge, last = i == ordered.lastIndex)
             }
         }
     }
 
-    private fun setupTools() {
+    private fun bindAppRow(row: ItemAppBinding, bridge: AppBridge, last: Boolean) {
+        val pkg = installedPackage(bridge)
+        row.name.setText(bridge.nameRes)
+        row.divider.visibility = if (last) View.GONE else View.VISIBLE
+
+        if (bridge.tested) {
+            row.badge.setText(R.string.badge_tested)
+            row.badge.backgroundTintList = ColorStateList.valueOf(color(MR.attr.colorSecondaryContainer))
+            row.badge.setTextColor(color(MR.attr.colorOnSecondaryContainer))
+        } else {
+            row.badge.setText(R.string.badge_beta)
+            row.badge.backgroundTintList = ColorStateList.valueOf(color(MR.attr.colorTertiaryContainer))
+            row.badge.setTextColor(color(MR.attr.colorOnTertiaryContainer))
+        }
+
+        if (pkg != null) {
+            row.icon.setImageDrawable(packageManager.getApplicationIcon(pkg))
+            row.detail.setText(bridge.descriptionRes)
+            row.root.alpha = 1f
+            row.toggle.isEnabled = true
+            row.toggle.isChecked = settings.isAppEnabled(bridge.packageName)
+            row.toggle.setOnCheckedChangeListener { _, checked -> settings.setAppEnabled(bridge.packageName, checked) }
+        } else {
+            row.icon.setImageResource(R.drawable.ic_launcher_foreground)
+            row.icon.setBackgroundResource(R.drawable.bg_app_icon)
+            row.detail.setText(R.string.app_not_installed)
+            row.root.alpha = 0.55f
+            row.toggle.isEnabled = false
+            row.toggle.isChecked = false
+        }
+    }
+
+    private fun installedPackage(bridge: AppBridge): String? = bridge.packages.firstOrNull { pkg ->
+        try { packageManager.getApplicationInfo(pkg, 0); true } catch (_: PackageManager.NameNotFoundException) { false }
+    }
+
+    // ---------------------------------------------------------------- diagnostics
+
+    private fun setupDiagnostics() {
         b.switchShade.isChecked = settings.showInShade
         b.switchShade.setOnCheckedChangeListener { _, checked -> settings.showInShade = checked }
 
         b.switchInspector.isChecked = settings.inspectorEnabled
         b.switchInspector.setOnCheckedChangeListener { _, checked -> settings.inspectorEnabled = checked }
 
-        b.btnTest.setOnClickListener {
-            if (!hasPostPermission()) {
-                Toast.makeText(this, R.string.toast_need_post_permission, Toast.LENGTH_SHORT).show()
-                requestPostNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
-                return@setOnClickListener
-            }
-            IslandPoster(this, settings).postDemo()
-            Toast.makeText(this, R.string.toast_test_posted, Toast.LENGTH_SHORT).show()
-        }
         b.btnInspector.setOnClickListener { startActivity(Intent(this, InspectorActivity::class.java)) }
         b.btnRebind.setOnClickListener {
             IslandBridgeService.requestRebind(this)
             Toast.makeText(this, R.string.toast_rebind, Toast.LENGTH_SHORT).show()
+            handler.postDelayed({ refreshStatus() }, 2500)
         }
     }
+
+    private fun color(@AttrRes attr: Int): Int = MaterialColors.getColor(b.root, attr)
 }
 
 /** Read-only probes of the HyperOS focus-notification plumbing. */

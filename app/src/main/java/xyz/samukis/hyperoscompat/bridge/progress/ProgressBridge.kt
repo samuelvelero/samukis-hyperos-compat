@@ -7,6 +7,7 @@ import xyz.samukis.hyperoscompat.bridge.ActionRole.OTHER
 import xyz.samukis.hyperoscompat.bridge.ActionRole.PAUSE
 import xyz.samukis.hyperoscompat.bridge.ActionRole.RESUME
 import xyz.samukis.hyperoscompat.bridge.BaseBridge
+import xyz.samukis.hyperoscompat.bridge.BridgeCategory
 import xyz.samukis.hyperoscompat.bridge.IslandKind
 import xyz.samukis.hyperoscompat.bridge.IslandSpec
 import xyz.samukis.hyperoscompat.bridge.Notif
@@ -21,8 +22,9 @@ class ProgressBridge(
     context: Context,
     packageName: String,
     @StringRes nameRes: Int,
+    @StringRes descriptionRes: Int,
     accentColor: String,
-) : BaseBridge(context, packageName, nameRes, accentColor) {
+) : BaseBridge(context, packageName, nameRes, descriptionRes, BridgeCategory.TRANSFERS, accentColor) {
 
     override fun translate(x: Notif, firstSeen: Long): IslandSpec? {
         val textPercent = Text.percent(x.haystack)

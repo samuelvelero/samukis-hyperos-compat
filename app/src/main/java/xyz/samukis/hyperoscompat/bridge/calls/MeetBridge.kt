@@ -18,6 +18,7 @@ class MeetBridge(context: Context) : CallBridge(
     context,
     packageName = "com.google.android.apps.tachyon",
     nameRes = R.string.app_meet,
+    descriptionRes = R.string.desc_meet,
     accentColor = "#00897B",
     packages = setOf("com.google.android.apps.tachyon", "com.google.android.apps.meetings"),
 ) {

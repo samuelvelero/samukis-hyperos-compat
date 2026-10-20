@@ -17,6 +17,7 @@ class WhatsAppBridge(context: Context) : CallBridge(
     context,
     packageName = "com.whatsapp",
     nameRes = R.string.app_whatsapp,
+    descriptionRes = R.string.desc_whatsapp,
     accentColor = "#25D366",
     packages = setOf("com.whatsapp", "com.whatsapp.w4b"),
 ) {

@@ -17,7 +17,9 @@ class DiscordBridge(context: Context) : CallBridge(
     context,
     packageName = PACKAGE,
     nameRes = R.string.app_discord,
+    descriptionRes = R.string.desc_discord,
     accentColor = "#5865F2",
+    tested = true,
 ) {
     /** Channel as title wherever it arrives, Discord's rotating boilerplate as subtitle. */
     override fun displayTitles(x: Notif): Pair<String, String?> {
