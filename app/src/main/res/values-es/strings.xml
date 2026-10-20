@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_subtitle">Lleva eventos de apps de terceros a la Hyper Island de HyperOS. Reacciona a eventos, sin sondeo en segundo plano.</string>
+
+    <string name="channel_island">Puente a Hyper Island</string>
+    <string name="channel_island_desc">Notificaciones silenciosas que HyperOS muestra como Hyper Island.</string>
+
+    <string name="section_status">Estado</string>
+    <string name="status_listener">Acceso a notificaciones</string>
+    <string name="status_focus">Permiso de notificaciones de foco</string>
+    <string name="status_island">Hyper Island compatible en esta ROM</string>
+    <string name="status_service">Servicio puente conectado</string>
+    <string name="status_ok">OK</string>
+    <string name="status_missing">Falta</string>
+    <string name="status_no">No</string>
+    <string name="status_yes">Sí</string>
+    <string name="action_grant">Conceder</string>
+    <string name="action_open">Abrir</string>
+    <string name="focus_hint">En los ajustes de notificaciones de la app, activa “Notificaciones de foco” (puede llamarse “Mostrar en la barra de estado”).</string>
+
+    <string name="section_apps">Apps</string>
+    <string name="apps_hint">Se pueden agregar más apps después; cada una es un pequeño traductor en el código.</string>
+    <string name="app_not_installed">No instalada</string>
+
+    <string name="section_tools">Herramientas</string>
+    <string name="pref_show_in_shade">Mostrar también la notificación de la isla en el panel</string>
+    <string name="pref_inspector">Inspector de notificaciones (registra las notificaciones que coinciden)</string>
+    <string name="action_test_island">Probar isla (20 s)</string>
+    <string name="action_open_inspector">Abrir inspector</string>
+    <string name="action_rebind">Reiniciar servicio puente</string>
+    <string name="toast_rebind">Reinicio solicitado</string>
+    <string name="toast_need_post_permission">Primero permite las notificaciones de esta app</string>
+    <string name="toast_test_posted">Isla de prueba enviada</string>
+
+    <string name="footer_version">Versión %1$s · actualizaciones vía Obtainium</string>
+
+    <string name="call_incoming">Llamada entrante</string>
+    <string name="call_ongoing">En llamada</string>
+    <string name="demo_text">Isla de prueba</string>
+    <string name="demo_dismiss">Cerrar</string>
+
+    <string name="inspector_title">Inspector de notificaciones</string>
+    <string name="inspector_empty">Aún no hay nada registrado. Activa el inspector en la pantalla principal y provoca una llamada de Discord.</string>
+    <string name="action_copy">Copiar</string>
+    <string name="action_clear">Limpiar</string>
+    <string name="action_refresh">Actualizar</string>
+    <string name="toast_copied">Copiado</string>
+</resources>

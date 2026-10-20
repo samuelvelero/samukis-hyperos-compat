@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Lower-case substrings matched against action titles and texts (English + Spanish). -->
+    <string-array name="kw_answer">
+        <item>answer</item><item>accept</item><item>join</item>
+        <item>responder</item><item>contestar</item><item>aceptar</item><item>unirse</item><item>unirme</item>
+    </string-array>
+    <string-array name="kw_decline">
+        <item>decline</item><item>reject</item><item>ignore</item><item>dismiss</item>
+        <item>rechazar</item><item>ignorar</item><item>descartar</item>
+    </string-array>
+    <string-array name="kw_hangup">
+        <item>hang up</item><item>hangup</item><item>disconnect</item><item>end call</item><item>leave</item>
+        <item>colgar</item><item>desconectar</item><item>finalizar</item><item>salir</item><item>abandonar</item><item>terminar</item>
+    </string-array>
+    <string-array name="kw_mute">
+        <item>mute</item><item>deafen</item><item>silenciar</item><item>ensordecer</item>
+    </string-array>
+    <string-array name="kw_incoming">
+        <item>incoming</item><item>is calling</item><item>calling you</item><item>ringing</item>
+        <item>entrante</item><item>te está llamando</item><item>te esta llamando</item><item>llamando</item>
+    </string-array>
+    <string-array name="kw_ongoing">
+        <item>connected</item><item>voice</item><item>in call</item><item>call</item><item>stage</item>
+        <item>conectado</item><item>voz</item><item>en llamada</item><item>llamada</item><item>escenario</item>
+    </string-array>
+</resources>

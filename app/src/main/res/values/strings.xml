@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Samukis HyperOS Compatibility Layer</string>
+    <string name="app_subtitle">Brings third-party app events into the HyperOS Hyper Island. Event-driven, no background polling.</string>
+
+    <string name="channel_island">Hyper Island bridge</string>
+    <string name="channel_island_desc">Silent notifications that HyperOS renders as a Hyper Island.</string>
+
+    <string name="section_status">Status</string>
+    <string name="status_listener">Notification access</string>
+    <string name="status_focus">Focus notifications permission</string>
+    <string name="status_island">Hyper Island supported by this ROM</string>
+    <string name="status_service">Bridge service connected</string>
+    <string name="status_ok">OK</string>
+    <string name="status_missing">Missing</string>
+    <string name="status_no">No</string>
+    <string name="status_yes">Yes</string>
+    <string name="action_grant">Grant</string>
+    <string name="action_open">Open</string>
+    <string name="focus_hint">In the app notification settings, enable “Focus notifications” (may be called “Show in status bar”).</string>
+
+    <string name="section_apps">Apps</string>
+    <string name="apps_hint">More apps can be added later; each one is a small translator in the code.</string>
+    <string name="app_discord">Discord</string>
+    <string name="app_not_installed">Not installed</string>
+
+    <string name="section_tools">Tools</string>
+    <string name="pref_show_in_shade">Also show the island notification in the shade</string>
+    <string name="pref_inspector">Notification inspector (logs matching notifications)</string>
+    <string name="action_test_island">Test island (20 s)</string>
+    <string name="action_open_inspector">Open inspector</string>
+    <string name="action_rebind">Restart bridge service</string>
+    <string name="toast_rebind">Rebind requested</string>
+    <string name="toast_need_post_permission">Allow notifications for this app first</string>
+    <string name="toast_test_posted">Test island posted</string>
+
+    <string name="footer_version">Version %1$s · updates via Obtainium</string>
+    <string name="footer_repo">github.com/samuelvelero/samukis-hyperos-compat</string>
+
+    <string name="call_incoming">Incoming call</string>
+    <string name="call_ongoing">In call</string>
+    <string name="demo_title">Samukis</string>
+    <string name="demo_text">Test island</string>
+    <string name="demo_dismiss">Dismiss</string>
+
+    <string name="inspector_title">Notification inspector</string>
+    <string name="inspector_empty">Nothing logged yet. Enable the inspector on the main screen, then trigger a Discord call.</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="toast_copied">Copied</string>
+</resources>

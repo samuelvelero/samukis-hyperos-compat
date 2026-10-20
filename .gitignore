@@ -1,0 +1,17 @@
+# Gradle / build
+.gradle/
+build/
+app/build/
+local.properties
+.kotlin/
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Signing material: never commit
+keystore/*.jks
+keystore/*.keystore
+keystore/keystore.properties
+keystore/*.b64
