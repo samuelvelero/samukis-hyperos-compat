@@ -27,9 +27,12 @@ class IslandBridgeService : NotificationListenerService(),
 
     private lateinit var settings: Settings
     private lateinit var poster: IslandPoster
-    private lateinit var bridges: Map<String, AppBridge>
+    private lateinit var bridges: List<AppBridge>
+    /** Source package -> bridge (a bridge may serve several packages). */
+    private lateinit var bridgeByPackage: Map<String, AppBridge>
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    /** Source packages whose bridge is switched on. */
     @Volatile private var enabled: Set<String> = emptySet()
     @Volatile private var inspector = false
 
@@ -46,7 +49,8 @@ class IslandBridgeService : NotificationListenerService(),
         super.onCreate()
         settings = Settings(this)
         poster = IslandPoster(this, settings)
-        bridges = BridgeRegistry.all(this).associateBy { it.packageName }
+        bridges = BridgeRegistry.all(this)
+        bridgeByPackage = bridges.flatMap { b -> b.packages.map { it to b } }.toMap()
         reloadPrefs()
         settings.registerListener(this)
         instance = this
@@ -83,12 +87,13 @@ class IslandBridgeService : NotificationListenerService(),
         if (sbn.packageName == packageName) {
             synchronized(active) {
                 if (ourCancels.remove(sbn.id)) return
-                // HyperOS or the user dismissed our island: forget it so the next source update re-posts it.
+                // HyperOS, a timeout or the user dismissed our island: forget it so the next source
+                // update can re-post it.
                 active.entries.removeIf { it.value.id == sbn.id }
             }
             return
         }
-        if (!bridges.containsKey(sbn.packageName)) return
+        if (!bridgeByPackage.containsKey(sbn.packageName)) return
         if (inspector) NotificationLog.event(this, "REMOVED ${sbn.key} reason=$reason")
         synchronized(active) {
             active.remove(sbn.key)?.let { cancelOurs(it.id) }
@@ -99,7 +104,7 @@ class IslandBridgeService : NotificationListenerService(),
     private fun handlePosted(sbn: StatusBarNotification) {
         val pkg = sbn.packageName
         if (pkg == packageName) return
-        val bridge = bridges[pkg] ?: return
+        val bridge = bridgeByPackage[pkg] ?: return
         if (pkg !in enabled) return
         if (inspector) NotificationLog.record(this, sbn)
 
@@ -110,7 +115,7 @@ class IslandBridgeService : NotificationListenerService(),
             if (spec == null) {
                 active.remove(key)?.let {
                     cancelOurs(it.id)
-                    if (inspector) NotificationLog.event(this, "island dropped: $key no longer looks like a call")
+                    if (inspector) NotificationLog.event(this, "island dropped: $key no longer qualifies")
                 }
                 firstSeen.remove(key)
                 return
@@ -119,13 +124,23 @@ class IslandBridgeService : NotificationListenerService(),
             val hash = spec.contentHash()
             val current = active[key]
             if (current != null && current.hash == hash) return
+
+            // Timed status islands (order updates, ride pushes) come as separate notifications:
+            // keep only the newest one per app.
+            if (spec.autoDismissMs > 0) {
+                val stale = active.entries.filter { it.value.pkg == pkg && it.key != key }
+                stale.forEach { cancelOurs(it.value.id); firstSeen.remove(it.key) }
+                active.keys.removeAll(stale.map { it.key }.toSet())
+            }
+
             val id = current?.id ?: idFor(key)
             try {
                 poster.post(id, pkg, spec, sbn.notification, sourceKey = key)
                 active[key] = Active(id, hash, pkg, spec)
                 if (inspector) NotificationLog.event(
                     this,
-                    "island ${if (current == null) "posted" else "updated"}: ${spec.state} \"${spec.title}\" " +
+                    "island ${if (current == null) "posted" else "updated"}: ${spec.kind} \"${spec.title}\" " +
+                        "trailing=${spec.trailing} progress=${spec.progress} " +
                         "actions=${spec.actions.joinToString { "${it.role}:${it.title}" }}",
                 )
             } catch (e: Exception) {
@@ -183,10 +198,11 @@ class IslandBridgeService : NotificationListenerService(),
             NotificationLog.event(this, "action click: send failed for \"$label\": ${e.javaClass.simpleName}")
             return
         }
-        // HyperOS collapses the island after a button press. For a toggle like mute the call goes on,
+        // HyperOS collapses the island after a button press. For toggles the activity goes on,
         // so bring the island back; the source app's next update will refresh its content.
         val role = snapshotAction?.role
-        if (snapshot != null && role != ActionRole.HANGUP && role != ActionRole.DECLINE) {
+        val terminal = role == ActionRole.HANGUP || role == ActionRole.DECLINE || role == ActionRole.CANCEL
+        if (snapshot != null && !terminal) {
             mainHandler.postDelayed({ repost(sourceKey) }, 700)
         }
     }
@@ -219,7 +235,7 @@ class IslandBridgeService : NotificationListenerService(),
     }
 
     private fun reloadPrefs() {
-        enabled = bridges.keys.filterTo(HashSet()) { settings.isAppEnabled(it) }
+        enabled = bridges.filter { settings.isAppEnabled(it.packageName) }.flatMapTo(HashSet()) { it.packages }
         inspector = settings.inspectorEnabled
     }
 

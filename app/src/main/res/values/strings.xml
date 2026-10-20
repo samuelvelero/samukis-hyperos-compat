@@ -22,6 +22,16 @@
     <string name="section_apps">Apps</string>
     <string name="apps_hint">More apps can be added later; each one is a small translator in the code.</string>
     <string name="app_discord">Discord</string>
+    <string name="app_uber">Uber</string>
+    <string name="app_meet">Google Meet</string>
+    <string name="app_whatsapp">WhatsApp</string>
+    <string name="app_drive">Google Drive</string>
+    <string name="app_photos">Google Photos</string>
+    <string name="app_micloud">Xiaomi Cloud</string>
+    <string name="app_play">Play Store</string>
+    <string name="app_instagram">Instagram</string>
+    <string name="app_pedidosya">PedidosYa</string>
+    <string name="app_rappi">Rappi</string>
     <string name="app_not_installed">Not installed</string>
 
     <string name="section_tools">Tools</string>
@@ -39,6 +49,10 @@
 
     <string name="call_incoming">Incoming call</string>
     <string name="call_ongoing">In call</string>
+    <string name="recording_voice_note">Recording voice note</string>
+    <string name="ride_arrived">Arrived</string>
+    <string name="meeting_soon">Starting soon</string>
+    <string name="minutes_short">%1$d min</string>
     <string name="demo_title">Samukis</string>
     <string name="demo_text">Test island</string>
     <string name="demo_dismiss">Dismiss</string>

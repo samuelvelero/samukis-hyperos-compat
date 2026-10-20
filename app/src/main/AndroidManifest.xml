@@ -6,6 +6,18 @@
     <!-- Only the apps we bridge. Avoids QUERY_ALL_PACKAGES. -->
     <queries>
         <package android:name="com.discord" />
+        <package android:name="com.ubercab" />
+        <package android:name="com.google.android.apps.tachyon" />
+        <package android:name="com.google.android.apps.meetings" />
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+        <package android:name="com.google.android.apps.docs" />
+        <package android:name="com.google.android.apps.photos" />
+        <package android:name="com.miui.cloudservice" />
+        <package android:name="com.android.vending" />
+        <package android:name="com.instagram.android" />
+        <package android:name="com.pedidosya" />
+        <package android:name="com.grability.rappi" />
     </queries>
 
     <application

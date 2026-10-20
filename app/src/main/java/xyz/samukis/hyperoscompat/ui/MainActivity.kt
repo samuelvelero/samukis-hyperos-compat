@@ -168,15 +168,17 @@ class MainActivity : AppCompatActivity() {
         for (bridge in BridgeRegistry.all(this)) {
             val row = ItemAppBinding.inflate(inflater, b.appsContainer, true)
             row.name.setText(bridge.nameRes)
-            val installed = try {
-                row.icon.setImageDrawable(packageManager.getApplicationIcon(bridge.packageName))
-                true
-            } catch (_: PackageManager.NameNotFoundException) {
-                row.icon.setImageResource(R.mipmap.ic_launcher)
-                false
+            val installedPkg = bridge.packages.firstOrNull { pkg ->
+                try { packageManager.getApplicationInfo(pkg, 0); true } catch (_: PackageManager.NameNotFoundException) { false }
             }
-            row.detail.text = if (installed) bridge.packageName else getString(R.string.app_not_installed)
-            row.toggle.isEnabled = installed
+            if (installedPkg != null) {
+                row.icon.setImageDrawable(packageManager.getApplicationIcon(installedPkg))
+            } else {
+                row.icon.setImageResource(R.mipmap.ic_launcher)
+                row.icon.alpha = 0.4f
+            }
+            row.detail.text = installedPkg ?: getString(R.string.app_not_installed)
+            row.toggle.isEnabled = installedPkg != null
             row.toggle.isChecked = settings.isAppEnabled(bridge.packageName)
             row.toggle.setOnCheckedChangeListener { _, checked ->
                 settings.setAppEnabled(bridge.packageName, checked)

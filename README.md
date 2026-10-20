@@ -1,7 +1,20 @@
 # Samukis HyperOS Compatibility Layer
 
 Lleva eventos de apps de terceros a la **Hyper Island** de HyperOS 3 (Xiaomi, Redmi, POCO).
-Primera app soportada: **Discord**, llamadas entrantes y llamadas en curso.
+
+## Apps soportadas
+
+| App | Qué muestra la isla | Estado |
+|---|---|---|
+| Discord | Canal de voz, cronómetro, silenciar / reactivar, desconectar | Probado en dispositivo |
+| Uber | Conductor en camino con ETA, llegada, PIN, viaje en curso; llamar / mensaje / compartir | Heurístico, por afinar con el inspector |
+| Google Meet | Reunión en curso con cronómetro, silenciar / cámara, salir; aviso "empieza en N min" con Unirse | Heurístico |
+| WhatsApp (y Business) | Llamadas entrantes y en curso; grabación de nota de voz con cancelar | Heurístico |
+| Drive, Google Fotos, Xiaomi Cloud, Play Store, Instagram | Subidas y descargas: anillo de porcentaje y tiempo restante | Heurístico |
+| PedidosYa, Rappi | Estado del pedido con ETA, se descarta solo a los minutos | Sin probar aún |
+
+Cada app es un traductor pequeño en `bridge/`. Las palabras clave que reconocen botones y
+estados están en `res/values/arrays.xml`, en español e inglés.
 
 - Sin servicio en primer plano, sin sondeo, sin wakelocks: un `NotificationListenerService`
   que el sistema despierta solo cuando Discord publica, actualiza o quita una notificación.

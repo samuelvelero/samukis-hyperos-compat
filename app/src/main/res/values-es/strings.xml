@@ -36,6 +36,10 @@
 
     <string name="call_incoming">Llamada entrante</string>
     <string name="call_ongoing">En llamada</string>
+    <string name="recording_voice_note">Grabando nota de voz</string>
+    <string name="ride_arrived">Llegó</string>
+    <string name="meeting_soon">Empieza pronto</string>
+    <string name="minutes_short">%1$d min</string>
     <string name="demo_text">Isla de prueba</string>
     <string name="demo_dismiss">Cerrar</string>
 

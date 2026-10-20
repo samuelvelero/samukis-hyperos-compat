@@ -3,17 +3,22 @@
     <!-- Lower-case substrings matched against action titles and texts (English + Spanish).
          Discord (es) voice actions seen on device: "Desconectar", "Silenciar" / "Desactivar silencio",
          "Ensordecer" / "Desactivar ensordecimiento". -->
+
+    <!-- Action roles (order of evaluation is in Keywords.roleOf) -->
     <string-array name="kw_answer">
-        <item>answer</item><item>accept</item><item>join</item>
-        <item>responder</item><item>contestar</item><item>aceptar</item><item>unirse</item><item>unirme</item>
+        <item>answer</item><item>accept</item><item>pick up</item>
+        <item>responder</item><item>contestar</item><item>aceptar</item><item>atender</item>
     </string-array>
     <string-array name="kw_decline">
-        <item>decline</item><item>reject</item><item>ignore</item><item>dismiss</item>
-        <item>rechazar</item><item>ignorar</item><item>descartar</item>
+        <item>decline</item><item>reject</item><item>ignore</item>
+        <item>rechazar</item><item>ignorar</item>
     </string-array>
     <string-array name="kw_hangup">
         <item>hang up</item><item>hangup</item><item>disconnect</item><item>end call</item><item>leave</item>
         <item>colgar</item><item>desconectar</item><item>finalizar</item><item>salir</item><item>abandonar</item><item>terminar</item>
+    </string-array>
+    <string-array name="kw_join">
+        <item>join</item><item>unirse</item><item>unirme</item><item>entrar</item>
     </string-array>
     <string-array name="kw_mute">
         <item>mute</item><item>silenciar</item><item>mutear</item>
@@ -24,13 +29,43 @@
     <string-array name="kw_deafen">
         <item>deafen</item><item>ensordec</item>
     </string-array>
+    <string-array name="kw_camera">
+        <item>camera</item><item>cámara</item><item>camara</item><item>video</item><item>vídeo</item>
+    </string-array>
+    <string-array name="kw_speaker">
+        <item>speaker</item><item>altavoz</item>
+    </string-array>
+    <string-array name="kw_cancel">
+        <item>cancel</item><item>cancelar</item><item>stop</item><item>detener</item><item>dismiss</item><item>descartar</item>
+    </string-array>
+    <string-array name="kw_pause">
+        <item>pause</item><item>pausar</item><item>pausa</item>
+    </string-array>
+    <string-array name="kw_resume">
+        <item>resume</item><item>reanudar</item><item>continue</item><item>continuar</item>
+    </string-array>
+    <string-array name="kw_call">
+        <item>call</item><item>llamar</item><item>llama</item>
+    </string-array>
+    <string-array name="kw_message">
+        <item>message</item><item>mensaje</item><item>chat</item><item>text</item><item>escribir</item>
+    </string-array>
+    <string-array name="kw_share">
+        <item>share</item><item>compartir</item>
+    </string-array>
+
+    <!-- Calls -->
     <string-array name="kw_incoming">
         <item>incoming</item><item>is calling</item><item>calling you</item><item>ringing</item>
         <item>entrante</item><item>te está llamando</item><item>te esta llamando</item><item>llamando</item>
     </string-array>
     <string-array name="kw_ongoing">
-        <item>connected</item><item>voice</item><item>in call</item><item>call</item><item>stage</item>
-        <item>conectado</item><item>conectada</item><item>voz</item><item>en llamada</item><item>llamada</item><item>escenario</item>
+        <item>connected</item><item>voice</item><item>in call</item><item>call</item><item>stage</item><item>meeting</item>
+        <item>conectado</item><item>conectada</item><item>voz</item><item>en llamada</item><item>llamada</item><item>escenario</item><item>reunión</item><item>reunion</item>
+    </string-array>
+    <string-array name="kw_ended">
+        <item>missed</item><item>ended</item><item>call ended</item><item>no answer</item>
+        <item>perdida</item><item>finalizada</item><item>finalizó</item><item>terminada</item><item>terminó</item><item>sin respuesta</item>
     </string-array>
     <!-- Phrases Discord puts in the title instead of the channel name, including connection phases. -->
     <string-array name="kw_generic">
@@ -40,8 +75,57 @@
         <item>waiting for</item><item>connecting</item><item>authenticating</item><item>rtc</item>
         <item>esperando</item><item>conectando</item><item>autenticando</item>
     </string-array>
-    <string-array name="kw_ended">
-        <item>missed</item><item>ended</item><item>call ended</item><item>no answer</item>
-        <item>perdida</item><item>finalizada</item><item>finalizó</item><item>terminada</item><item>terminó</item><item>sin respuesta</item>
+    <string-array name="kw_meeting_soon">
+        <item>starts in</item><item>starting soon</item><item>starting in</item><item>about to start</item>
+        <item>empieza en</item><item>comienza en</item><item>está por empezar</item><item>esta por empezar</item>
+        <item>empieza pronto</item><item>comienza pronto</item><item>empezará</item><item>empezara</item><item>comenzará</item><item>comenzara</item>
+    </string-array>
+    <string-array name="kw_recording">
+        <item>recording</item><item>grabando</item><item>grabación de voz</item><item>grabacion de voz</item>
+    </string-array>
+
+    <!-- Rides (Uber) -->
+    <string-array name="kw_ride">
+        <item>arriving</item><item>arrive</item><item>on the way</item><item>on their way</item><item>heading to</item>
+        <item>has arrived</item><item>is here</item><item>your trip</item><item>your ride</item><item>pickup</item><item>driver</item>
+        <item>dropping</item><item>waiting</item><item>pin</item><item>min</item>
+        <item>llegará</item><item>llegara</item><item>llega en</item><item>en camino</item><item>ha llegado</item><item>llegó</item>
+        <item>está aquí</item><item>esta aqui</item><item>conductor</item><item>tu viaje</item><item>recog</item><item>en ruta</item>
+        <item>llegas</item><item>esperando</item>
+    </string-array>
+    <string-array name="kw_arrived">
+        <item>has arrived</item><item>is here</item><item>arrived</item><item>waiting for you</item><item>is waiting</item>
+        <item>ha llegado</item><item>llegó</item><item>está aquí</item><item>esta aqui</item><item>te espera</item><item>está esperando</item><item>esta esperando</item>
+    </string-array>
+    <string-array name="kw_trip_over">
+        <item>receipt</item><item>rate your</item><item>thanks for riding</item><item>how was</item><item>trip ended</item><item>completed trip</item><item>tip</item>
+        <item>recibo</item><item>califica</item><item>calificar</item><item>gracias por viajar</item><item>cómo estuvo</item><item>como estuvo</item>
+        <item>viaje finalizado</item><item>propina</item>
+    </string-array>
+
+    <!-- Food delivery (PedidosYa, Rappi) -->
+    <string-array name="kw_delivery">
+        <item>preparing</item><item>on the way</item><item>on its way</item><item>rider</item><item>courier</item><item>arrived</item>
+        <item>delivered</item><item>your order</item><item>order</item><item>is near</item><item>nearby</item><item>picked up</item>
+        <item>confirmed</item><item>accepted</item><item>at your door</item><item>arriving</item>
+        <item>preparando</item><item>en camino</item><item>repartidor</item><item>llegó</item><item>ha llegado</item><item>entregado</item>
+        <item>tu pedido</item><item>pedido</item><item>está cerca</item><item>esta cerca</item><item>recogiendo</item><item>confirmado</item>
+        <item>aceptado</item><item>en la puerta</item><item>llegando</item>
+    </string-array>
+    <string-array name="kw_delivery_done">
+        <item>delivered</item><item>cancelled</item><item>canceled</item>
+        <item>entregado</item><item>cancelado</item><item>rechazado</item>
+    </string-array>
+    <string-array name="kw_promo">
+        <item>discount</item><item>promo</item><item>coupon</item><item>offer</item><item>free</item><item>% off</item><item>rewards</item>
+        <item>descuento</item><item>cupón</item><item>cupon</item><item>oferta</item><item>gratis</item><item>2x1</item><item>sorteo</item>
+        <item>puntos</item><item>crédito</item><item>credito</item>
+    </string-array>
+
+    <!-- Transfers (Drive, Photos, Mi Cloud, Play Store, Instagram) -->
+    <string-array name="kw_progress_done">
+        <item>complete</item><item>finished</item><item>uploaded</item><item>downloaded</item><item>installed</item><item>backed up</item><item>failed</item>
+        <item>completado</item><item>completada</item><item>finalizado</item><item>finalizada</item><item>listo</item><item>subido</item>
+        <item>descargado</item><item>instalado</item><item>copia de seguridad completa</item><item>falló</item><item>error</item>
     </string-array>
 </resources>

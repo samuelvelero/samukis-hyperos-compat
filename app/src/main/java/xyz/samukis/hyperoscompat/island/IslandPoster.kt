@@ -25,8 +25,8 @@ import io.github.d4viddf.hyperisland_kit.models.TimerInfo
 import xyz.samukis.hyperoscompat.App
 import xyz.samukis.hyperoscompat.R
 import xyz.samukis.hyperoscompat.bridge.ActionRole
-import xyz.samukis.hyperoscompat.bridge.CallState
 import xyz.samukis.hyperoscompat.bridge.IslandAction
+import xyz.samukis.hyperoscompat.bridge.IslandKind
 import xyz.samukis.hyperoscompat.bridge.IslandSpec
 import xyz.samukis.hyperoscompat.prefs.Settings
 import xyz.samukis.hyperoscompat.receiver.ActionReceiver
@@ -44,6 +44,7 @@ class IslandPoster(private val context: Context, private val settings: Settings)
     /**
      * @param sourceKey key of the source notification; when given, island buttons are routed through
      *        [ActionReceiver] (a broadcast we own) and forwarded to the source action from our process.
+     * @param timeoutMs overrides the spec's auto-dismiss when > 0.
      */
     fun post(
         id: Int,
@@ -55,24 +56,20 @@ class IslandPoster(private val context: Context, private val settings: Settings)
     ) {
         val island = HyperIslandNotification.Builder(context, "samukis_$pkg", spec.title)
             .setEnableFloat(false)
-            .setIslandFirstFloat(spec.state == CallState.INCOMING)
+            .setIslandFirstFloat(spec.expandFirst)
             .setShowNotification(settings.showInShade)
+            .setShowSmallIcon(false)
 
         // Avatar: the source's large icon if it sends one, else the source app's icon. In the collapsed
         // pill this is the only thing visible, so it must say "Discord", not the channel name.
         val avatar = spec.avatar ?: appIcon(pkg)
         val picKey = "avatar"
         island.addPicture(HyperPicture(picKey, avatar))
-        // Ask HyperOS not to badge the avatar with a small app icon.
-        island.setShowSmallIcon(false)
 
         val actionKeys = ArrayList<String>(spec.actions.size)
         spec.actions.forEachIndexed { i, a ->
             // The glyph is part of the key so HyperOS cannot reuse a cached icon when a toggle flips.
             val key = "act${i}_${a.iconRes}_${a.role.ordinal}"
-            val intent = if (sourceKey != null && a.sourceIndex >= 0) {
-                ActionReceiver.pendingIntent(context, id, i, sourceKey, a.sourceIndex)
-            } else a.intent
             val bg = a.bgColor ?: colorFor(a.role)
             // Always our own round glyph: with an icon HyperOS draws a circular button instead of a text pill.
             val icon = roundIcon(if (a.iconRes != 0) a.iconRes else glyphFor(a.role), bg)
@@ -81,7 +78,7 @@ class IslandPoster(private val context: Context, private val settings: Settings)
                     key = key,
                     title = a.title,
                     icon = icon,
-                    pendingIntent = intent,
+                    pendingIntent = routed(id, i, a, sourceKey),
                     actionIntentType = ACTION_TYPE_BROADCAST,
                     actionBgColor = bg,
                     titleColor = "#FFFFFF",
@@ -89,55 +86,91 @@ class IslandPoster(private val context: Context, private val settings: Settings)
             )
             actionKeys += key
         }
-
+        val keys = actionKeys.ifEmpty { null }
+        val accent = spec.accentColor
         val now = System.currentTimeMillis()
-        val counting = spec.state == CallState.ONGOING && spec.startTime > 0
-        val timer = if (counting) TimerInfo(1, spec.startTime, now - spec.startTime, now) else null
+        val start = if (spec.startTime > 0) spec.startTime else now
 
-        // appPkg = the source app: if HyperOS insists on drawing the badge anyway, it shows Discord, not us.
-        island.setChatInfo(
-            title = spec.title,
-            content = spec.subtitle,
-            pictureKey = picKey,
-            appPkg = pkg,
-            timer = timer,
-            actionKeys = actionKeys.ifEmpty { null },
-        )
-        island.setSmallIsland(picKey)
-        island.setIslandConfig(highlightColor = spec.accentColor)
-        if (counting) {
-            island.setBigIslandCountUp(spec.startTime, picKey)
-        } else {
-            island.setBigIslandInfo(
-                left = ImageTextInfoLeft(
-                    type = 1,
-                    picInfo = PicInfo(type = 1, pic = picKey),
-                    textInfo = TextInfo(title = spec.title),
-                ),
-                right = ImageTextInfoRight(type = 2, textInfo = TextInfo(title = spec.subtitle.orEmpty())),
-            )
+        when (spec.kind) {
+            IslandKind.INCOMING -> {
+                island.setChatInfo(title = spec.title, content = spec.subtitle, pictureKey = picKey, appPkg = pkg, actionKeys = keys)
+                island.setBigIslandInfo(
+                    left = ImageTextInfoLeft(type = 1, picInfo = PicInfo(type = 1, pic = picKey), textInfo = TextInfo(title = spec.title)),
+                    right = ImageTextInfoRight(type = 2, textInfo = TextInfo(title = spec.trailing ?: spec.subtitle.orEmpty())),
+                )
+                island.setSmallIsland(picKey)
+            }
+            IslandKind.TIMER -> {
+                island.setChatInfo(
+                    title = spec.title, content = spec.subtitle, pictureKey = picKey, appPkg = pkg,
+                    timer = TimerInfo(1, start, now - start, now), actionKeys = keys,
+                )
+                island.setBigIslandCountUp(start, picKey)
+                island.setSmallIsland(picKey)
+            }
+            IslandKind.PROGRESS -> {
+                island.setBaseInfo(
+                    title = spec.title,
+                    content = spec.subtitle ?: spec.trailing.orEmpty(),
+                    subContent = if (spec.subtitle != null) spec.trailing else null,
+                    pictureKey = picKey,
+                    actionKeys = keys,
+                )
+                val p = spec.progress
+                if (p != null) {
+                    island.setProgressBar(p, accent)
+                    island.setBigIslandProgressCircle(picKey, "", p, accent, isCCW = true)
+                    island.setSmallIslandCircularProgress(picKey, p, accent, isCCW = true)
+                } else {
+                    island.setBigIslandInfo(
+                        left = ImageTextInfoLeft(type = 1, picInfo = PicInfo(type = 1, pic = picKey), textInfo = TextInfo(title = spec.title)),
+                        right = ImageTextInfoRight(type = 2, textInfo = TextInfo(title = spec.subtitle ?: "…")),
+                    )
+                    island.setSmallIsland(picKey)
+                }
+            }
+            IslandKind.STATUS -> {
+                island.setBaseInfo(
+                    title = spec.title,
+                    content = spec.subtitle.orEmpty(),
+                    subContent = spec.trailing,
+                    specialTitle = spec.highlight,
+                    colorSpecialBg = accent,
+                    colorSpecialTitle = if (accent.equals("#FFFFFF", ignoreCase = true)) "#000000" else "#FFFFFF",
+                    pictureKey = picKey,
+                    actionKeys = keys,
+                )
+                island.setBigIslandInfo(
+                    left = ImageTextInfoLeft(type = 1, picInfo = PicInfo(type = 1, pic = picKey), textInfo = TextInfo(title = spec.title)),
+                    right = ImageTextInfoRight(type = 2, textInfo = TextInfo(title = spec.trailing ?: spec.highlight.orEmpty())),
+                )
+                island.setSmallIsland(picKey)
+            }
         }
+        island.setIslandConfig(highlightColor = accent)
 
+        val timeout = if (timeoutMs > 0) timeoutMs else spec.autoDismissMs
+        val shadeText = listOfNotNull(spec.subtitle, spec.trailing, spec.highlight).joinToString(" · ").ifEmpty { null }
         val builder = Notification.Builder(context, App.CHANNEL_ISLAND)
             .setSmallIcon(R.drawable.ic_stat_island)
             .setContentTitle(spec.title)
-            .setContentText(spec.subtitle)
-            .setCategory(Notification.CATEGORY_CALL)
-            .setOngoing(true)
+            .setContentText(shadeText)
+            .setCategory(categoryFor(spec.kind))
+            .setOngoing(timeout == 0L)
             .setOnlyAlertOnce(true)
-            .setShowWhen(counting)
-            .setWhen(if (counting) spec.startTime else now)
-            .setUsesChronometer(counting)
+            .setLargeIcon(avatar)
             .addExtras(island.buildResourceBundle())
-        if (timeoutMs > 0) builder.setTimeoutAfter(timeoutMs)
+        if (spec.kind == IslandKind.TIMER) {
+            builder.setShowWhen(true).setWhen(start).setUsesChronometer(true)
+        } else {
+            builder.setShowWhen(false)
+        }
+        if (spec.kind == IslandKind.PROGRESS) builder.setProgress(100, spec.progress ?: 0, spec.progress == null)
+        if (timeout > 0) builder.setTimeoutAfter(timeout)
         source?.contentIntent?.let { builder.setContentIntent(it) }
-        builder.setLargeIcon(avatar)
         spec.actions.forEachIndexed { i, a ->
-            val intent = if (sourceKey != null && a.sourceIndex >= 0) {
-                ActionReceiver.pendingIntent(context, id, i, sourceKey, a.sourceIndex)
-            } else a.intent
             val glyph = Icon.createWithResource(context, if (a.iconRes != 0) a.iconRes else glyphFor(a.role))
-            builder.addAction(Notification.Action.Builder(glyph, a.title, intent).build())
+            builder.addAction(Notification.Action.Builder(glyph, a.title, routed(id, i, a, sourceKey)).build())
         }
 
         val notification = builder.build()
@@ -147,38 +180,54 @@ class IslandPoster(private val context: Context, private val settings: Settings)
 
     fun cancel(id: Int) = nm.cancel(id)
 
-    /** Posts a 20 s ongoing island so the user can confirm permissions without a real call. */
+    /** Posts a 20 s timer island so the user can confirm permissions without a real call. */
     fun postDemo() {
         val dismiss = PendingIntent.getBroadcast(
             context, 0, Intent(context, DismissReceiver::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val spec = IslandSpec(
-            state = CallState.ONGOING,
+            kind = IslandKind.TIMER,
             title = context.getString(R.string.demo_title),
             subtitle = context.getString(R.string.demo_text),
             startTime = System.currentTimeMillis(),
-            actions = listOf(
-                IslandAction(ActionRole.HANGUP, context.getString(R.string.demo_dismiss), null, dismiss)
-            ),
-            avatar = null,
+            actions = listOf(IslandAction(ActionRole.HANGUP, context.getString(R.string.demo_dismiss), null, dismiss)),
             accentColor = "#5865F2",
         )
         post(DEMO_ID, context.packageName, spec, null, sourceKey = null, timeoutMs = 20_000L)
     }
 
+    private fun routed(id: Int, slot: Int, a: IslandAction, sourceKey: String?): PendingIntent =
+        if (sourceKey != null && a.sourceIndex >= 0) {
+            ActionReceiver.pendingIntent(context, id, slot, sourceKey, a.sourceIndex)
+        } else a.intent
+
+    private fun categoryFor(kind: IslandKind) = when (kind) {
+        IslandKind.INCOMING, IslandKind.TIMER -> Notification.CATEGORY_CALL
+        IslandKind.PROGRESS -> Notification.CATEGORY_PROGRESS
+        IslandKind.STATUS -> Notification.CATEGORY_STATUS
+    }
+
     private fun colorFor(role: ActionRole) = when (role) {
-        ActionRole.DECLINE, ActionRole.HANGUP -> "#FF3B30"
-        ActionRole.ANSWER -> "#34C759"
+        ActionRole.DECLINE, ActionRole.HANGUP, ActionRole.CANCEL -> "#FF3B30"
+        ActionRole.ANSWER, ActionRole.JOIN, ActionRole.CALL -> "#34C759"
         ActionRole.UNMUTE -> "#FF9F0A" // currently muted: warm so it stands out
         else -> "#3A3A3C"
     }
 
     private fun glyphFor(role: ActionRole) = when (role) {
         ActionRole.DECLINE, ActionRole.HANGUP -> R.drawable.ic_call_end
-        ActionRole.ANSWER -> R.drawable.ic_call
+        ActionRole.ANSWER, ActionRole.CALL -> R.drawable.ic_call
+        ActionRole.JOIN -> R.drawable.ic_videocam
         ActionRole.MUTE -> R.drawable.ic_mic
         ActionRole.UNMUTE -> R.drawable.ic_mic_off
+        ActionRole.CAMERA -> R.drawable.ic_videocam
+        ActionRole.SPEAKER -> R.drawable.ic_speaker
+        ActionRole.CANCEL -> R.drawable.ic_close
+        ActionRole.PAUSE -> R.drawable.ic_pause
+        ActionRole.RESUME -> R.drawable.ic_play
+        ActionRole.SHARE -> R.drawable.ic_share
+        ActionRole.MESSAGE -> R.drawable.ic_chat
         ActionRole.DEAFEN, ActionRole.OTHER -> R.drawable.ic_stat_island
     }
 
