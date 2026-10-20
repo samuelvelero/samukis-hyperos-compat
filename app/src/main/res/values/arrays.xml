@@ -14,7 +14,12 @@
         <item>colgar</item><item>desconectar</item><item>finalizar</item><item>salir</item><item>abandonar</item><item>terminar</item>
     </string-array>
     <string-array name="kw_mute">
-        <item>mute</item><item>deafen</item><item>silenciar</item><item>ensordecer</item>
+        <item>mute</item><item>unmute</item><item>deafen</item><item>mic</item>
+        <item>silenciar</item><item>mutear</item><item>ensordecer</item><item>micrófono</item><item>microfono</item>
+    </string-array>
+    <string-array name="kw_ended">
+        <item>missed</item><item>ended</item><item>call ended</item><item>no answer</item>
+        <item>perdida</item><item>finalizada</item><item>finalizó</item><item>terminada</item><item>terminó</item><item>sin respuesta</item>
     </string-array>
     <string-array name="kw_incoming">
         <item>incoming</item><item>is calling</item><item>calling you</item><item>ringing</item>

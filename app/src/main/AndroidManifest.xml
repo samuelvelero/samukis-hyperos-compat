@@ -45,5 +45,9 @@
         <receiver
             android:name=".receiver.DismissReceiver"
             android:exported="false" />
+
+        <receiver
+            android:name=".receiver.ActionReceiver"
+            android:exported="false" />
     </application>
 </manifest>

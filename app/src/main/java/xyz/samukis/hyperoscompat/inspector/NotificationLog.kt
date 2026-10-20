@@ -4,6 +4,7 @@ import android.app.Notification
 import android.content.Context
 import android.os.Bundle
 import android.service.notification.StatusBarNotification
+import xyz.samukis.hyperoscompat.prefs.Settings
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -26,6 +27,15 @@ object NotificationLog {
                 f.writeText(keep)
             }
             f.appendText(format(sbn))
+        } catch (_: Exception) {
+        }
+    }
+
+    /** One-line event (removal, action click, resync) for the same log. Only when the inspector is on. */
+    fun event(context: Context, text: String) {
+        if (!Settings(context).inspectorEnabled) return
+        try {
+            File(context.filesDir, FILE).appendText("-- ${fmt.format(Date())} $text\n\n")
         } catch (_: Exception) {
         }
     }

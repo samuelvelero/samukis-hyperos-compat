@@ -64,6 +64,8 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refreshStatus()
+        // Opening the app is a good moment to drop islands whose call already ended.
+        IslandBridgeService.instance?.resync()
     }
 
     private fun hasPostPermission() =

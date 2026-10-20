@@ -12,8 +12,9 @@ class Settings(context: Context) {
     fun isAppEnabled(pkg: String): Boolean = sp.getBoolean(appKey(pkg), true)
     fun setAppEnabled(pkg: String, enabled: Boolean) = sp.edit { putBoolean(appKey(pkg), enabled) }
 
+    /** On by default while the Discord translator is being tuned against real payloads. */
     var inspectorEnabled: Boolean
-        get() = sp.getBoolean(KEY_INSPECTOR, false)
+        get() = sp.getBoolean(KEY_INSPECTOR, true)
         set(value) = sp.edit { putBoolean(KEY_INSPECTOR, value) }
 
     var showInShade: Boolean

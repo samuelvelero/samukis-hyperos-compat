@@ -46,11 +46,17 @@ class DiscordBridge(context: Context) : AppBridge {
         val textIncoming = kw.looksIncoming(haystack)
         val textOngoing = kw.looksOngoing(haystack)
 
+        // "Missed call" / "Call ended" style notifications are history, not a live call.
+        if (kw.looksEnded(haystack) || n.category == Notification.CATEGORY_MISSED_CALL) return null
+
         val isCall = isCallCategory || hasAnswer || hasHangup || textIncoming || (isOngoingFlag && textOngoing)
         if (!isCall) return null
 
         val chrono = extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER)
         val incoming = !chrono && !hasHangup && (hasAnswer || textIncoming)
+        // A live voice session is always an ongoing (non-dismissable) notification. Anything else that
+        // merely looks call-related is not a reason to keep an island alive.
+        if (!incoming && !isOngoingFlag && !chrono) return null
         val state = if (incoming) CallState.INCOMING else CallState.ONGOING
 
         val startTime = when {
@@ -79,18 +85,20 @@ class DiscordBridge(context: Context) : AppBridge {
         roles: List<ActionRole>,
         state: CallState,
     ): List<IslandAction> {
-        fun find(role: ActionRole) = roles.indexOf(role).takeIf { it >= 0 }?.let { actions[it] to role }
+        fun find(role: ActionRole): Int? = roles.indexOf(role).takeIf { it >= 0 }
 
         val wanted = if (state == CallState.INCOMING) {
             listOfNotNull(find(ActionRole.DECLINE), find(ActionRole.ANSWER))
         } else {
             listOfNotNull(find(ActionRole.MUTE), find(ActionRole.HANGUP))
         }
-        val chosen = wanted.ifEmpty {
-            actions.take(2).mapIndexed { i, a -> a to roles[i] }
-        }
-        return chosen.map { (a, role) ->
-            IslandAction(role, a.title ?: "", a.getIcon(), a.actionIntent)
+        // Fill the second slot with any other action Discord offers (e.g. a mute we did not recognise).
+        val filled = if (wanted.size < 2) {
+            wanted + actions.indices.filter { it !in wanted }.take(2 - wanted.size)
+        } else wanted
+        return filled.map { i ->
+            val a = actions[i]
+            IslandAction(roles[i], a.title ?: "", a.getIcon(), a.actionIntent, sourceIndex = i)
         }
     }
 

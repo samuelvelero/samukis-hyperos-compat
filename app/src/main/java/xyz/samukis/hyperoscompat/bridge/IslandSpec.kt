@@ -12,6 +12,8 @@ class IslandAction(
     val title: CharSequence,
     val icon: Icon?,
     val intent: PendingIntent,
+    /** Index of this action inside the source notification's actions array; -1 when not from a source. */
+    val sourceIndex: Int = -1,
 )
 
 /** Everything the poster needs to render an island. Produced by an [AppBridge]. */

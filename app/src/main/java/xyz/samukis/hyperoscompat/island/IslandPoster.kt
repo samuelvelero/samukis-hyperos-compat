@@ -22,6 +22,7 @@ import xyz.samukis.hyperoscompat.bridge.CallState
 import xyz.samukis.hyperoscompat.bridge.IslandAction
 import xyz.samukis.hyperoscompat.bridge.IslandSpec
 import xyz.samukis.hyperoscompat.prefs.Settings
+import xyz.samukis.hyperoscompat.receiver.ActionReceiver
 import xyz.samukis.hyperoscompat.receiver.DismissReceiver
 
 /**
@@ -32,7 +33,18 @@ class IslandPoster(private val context: Context, private val settings: Settings)
     private val nm = context.getSystemService(NotificationManager::class.java)
     private val iconCache = HashMap<String, Icon>()
 
-    fun post(id: Int, pkg: String, spec: IslandSpec, source: Notification?, timeoutMs: Long = 0L) {
+    /**
+     * @param sourceKey key of the source notification; when given, island buttons are routed through
+     *        [ActionReceiver] (a broadcast we own) and forwarded to the source action from our process.
+     */
+    fun post(
+        id: Int,
+        pkg: String,
+        spec: IslandSpec,
+        source: Notification?,
+        sourceKey: String? = null,
+        timeoutMs: Long = 0L,
+    ) {
         val island = HyperIslandNotification.Builder(context, "samukis_$pkg", spec.title)
             .setEnableFloat(false)
             .setIslandFirstFloat(spec.state == CallState.INCOMING)
@@ -45,13 +57,16 @@ class IslandPoster(private val context: Context, private val settings: Settings)
         val actionKeys = ArrayList<String>(spec.actions.size)
         spec.actions.forEachIndexed { i, a ->
             val key = "act$i"
+            val intent = if (sourceKey != null && a.sourceIndex >= 0) {
+                ActionReceiver.pendingIntent(context, id, i, sourceKey, a.sourceIndex)
+            } else a.intent
             island.addAction(
                 HyperAction(
                     key = key,
                     title = a.title,
                     icon = a.icon,
-                    pendingIntent = a.intent,
-                    actionIntentType = 1,
+                    pendingIntent = intent,
+                    actionIntentType = ACTION_TYPE_BROADCAST,
                     actionBgColor = colorFor(a.role),
                     titleColor = "#FFFFFF",
                 )
@@ -100,7 +115,12 @@ class IslandPoster(private val context: Context, private val settings: Settings)
         if (timeoutMs > 0) builder.setTimeoutAfter(timeoutMs)
         source?.contentIntent?.let { builder.setContentIntent(it) }
         spec.avatar?.let { builder.setLargeIcon(it) }
-        spec.actions.forEach { builder.addAction(Notification.Action.Builder(it.icon, it.title, it.intent).build()) }
+        spec.actions.forEachIndexed { i, a ->
+            val intent = if (sourceKey != null && a.sourceIndex >= 0) {
+                ActionReceiver.pendingIntent(context, id, i, sourceKey, a.sourceIndex)
+            } else a.intent
+            builder.addAction(Notification.Action.Builder(a.icon, a.title, intent).build())
+        }
 
         val notification = builder.build()
         notification.extras.putString("miui.focus.param", island.buildJsonParam())
@@ -131,7 +151,7 @@ class IslandPoster(private val context: Context, private val settings: Settings)
             avatar = null,
             accentColor = "#5865F2",
         )
-        post(DEMO_ID, context.packageName, spec, null, timeoutMs = 20_000L)
+        post(DEMO_ID, context.packageName, spec, null, sourceKey = null, timeoutMs = 20_000L)
     }
 
     private fun colorFor(role: ActionRole) = when (role) {
@@ -150,5 +170,8 @@ class IslandPoster(private val context: Context, private val settings: Settings)
 
     companion object {
         const val DEMO_ID = 7
+
+        /** HyperOS action intent types: 1 = Activity, 2 = Broadcast, 3 = Service. */
+        private const val ACTION_TYPE_BROADCAST = 2
     }
 }

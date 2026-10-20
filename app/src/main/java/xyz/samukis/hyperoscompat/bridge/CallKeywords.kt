@@ -12,6 +12,7 @@ class CallKeywords(context: Context) {
     private val mute = load(context, R.array.kw_mute)
     private val incoming = load(context, R.array.kw_incoming)
     private val ongoing = load(context, R.array.kw_ongoing)
+    private val ended = load(context, R.array.kw_ended)
 
     fun roleOf(title: CharSequence?): ActionRole {
         val t = title?.toString()?.lowercase()?.trim().orEmpty()
@@ -27,6 +28,7 @@ class CallKeywords(context: Context) {
 
     fun looksIncoming(text: String): Boolean = incoming.any { text.contains(it) }
     fun looksOngoing(text: String): Boolean = ongoing.any { text.contains(it) }
+    fun looksEnded(text: String): Boolean = ended.any { text.contains(it) }
 
     private fun load(context: Context, @ArrayRes res: Int): List<String> =
         context.resources.getStringArray(res).map { it.lowercase() }
