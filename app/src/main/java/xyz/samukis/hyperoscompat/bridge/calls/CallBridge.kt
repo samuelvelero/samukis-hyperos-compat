@@ -34,11 +34,16 @@ open class CallBridge(
         // "Missed call" / "Call ended" style notifications are history, not a live call.
         if (x.isMissedCall || kw.looksEnded(x.haystack)) return null
 
-        val isCall = x.isCallCategory || x.has(ANSWER) || x.has(DECLINE) || x.has(HANGUP) ||
-            kw.looksIncoming(x.haystack) || (x.ongoing && kw.looksOngoing(x.haystack))
+        // Chat messages (with their "Reply" / "Mark as read" buttons) are never calls.
+        if (x.isMessage) return other(x, firstSeen)
+
+        // Ringing needs real evidence: the call category, "incoming call" text, or a decline + answer pair.
+        val ringing = x.isCallCategory || kw.looksIncoming(x.haystack) ||
+            (x.has(DECLINE) && (x.has(ANSWER) || x.has(JOIN)))
+        val isCall = ringing || x.has(HANGUP) || (x.ongoing && kw.looksOngoing(x.haystack))
         if (!isCall) return other(x, firstSeen)
 
-        val incoming = !x.chrono && !x.has(HANGUP) && (x.has(ANSWER) || x.has(JOIN) || kw.looksIncoming(x.haystack))
+        val incoming = ringing && !x.chrono && !x.has(HANGUP)
         // A live call is always an ongoing (non-dismissable) notification. Anything else that merely
         // looks call-related is not a reason to keep an island alive.
         if (!incoming && !x.ongoing && !x.chrono) return null

@@ -20,6 +20,11 @@ class Notif(val sbn: StatusBarNotification, kw: Keywords) {
     val whenMs = n.`when`
     val isCallCategory = n.category == Notification.CATEGORY_CALL || template.endsWith("CallStyle")
     val isMissedCall = n.category == Notification.CATEGORY_MISSED_CALL
+    /** Chat messages: MessagingStyle, inbox or the message category. Never a call unless CallStyle says so. */
+    val isMessage = !isCallCategory && (
+        n.category == Notification.CATEGORY_MESSAGE || n.category == Notification.CATEGORY_EMAIL ||
+            n.category == Notification.CATEGORY_SOCIAL || template.contains("MessagingStyle") || template.contains("InboxStyle")
+        )
 
     val progressMax = e.getInt(Notification.EXTRA_PROGRESS_MAX, 0)
     val progress = e.getInt(Notification.EXTRA_PROGRESS, 0)
@@ -29,7 +34,10 @@ class Notif(val sbn: StatusBarNotification, kw: Keywords) {
     val haystack: String = listOf(title, text, sub, big).filter { it.isNotEmpty() }.joinToString(" ").lowercase()
 
     val actions: List<Notification.Action> = n.actions?.filter { it.actionIntent != null }.orEmpty()
-    val roles: List<ActionRole> = actions.map { kw.roleOf(it.title) }
+    /** A button with a text field is a quick reply ("Responder"), never an answer-call button. */
+    val roles: List<ActionRole> = actions.map { a ->
+        if (a.remoteInputs?.isNotEmpty() == true) ActionRole.OTHER else kw.roleOf(a.title)
+    }
 
     fun has(role: ActionRole) = role in roles
 

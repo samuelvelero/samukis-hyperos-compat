@@ -5,9 +5,10 @@
          "Ensordecer" / "Desactivar ensordecimiento". -->
 
     <!-- Action roles (order of evaluation is in Keywords.roleOf) -->
+    <!-- "responder" is deliberately absent: Discord/WhatsApp use it for text replies to messages. -->
     <string-array name="kw_answer">
         <item>answer</item><item>accept</item><item>pick up</item>
-        <item>responder</item><item>contestar</item><item>aceptar</item><item>atender</item>
+        <item>responder llamada</item><item>contestar</item><item>aceptar</item><item>atender</item>
     </string-array>
     <string-array name="kw_decline">
         <item>decline</item><item>reject</item><item>ignore</item>
