@@ -14,6 +14,10 @@ class IslandAction(
     val intent: PendingIntent,
     /** Index of this action inside the source notification's actions array; -1 when not from a source. */
     val sourceIndex: Int = -1,
+    /** Glyph drawn on the round button; 0 = pick from [role]. */
+    val iconRes: Int = 0,
+    /** Button background; null = pick from [role]. */
+    val bgColor: String? = null,
 )
 
 /** Everything the poster needs to render an island. Produced by an [AppBridge]. */

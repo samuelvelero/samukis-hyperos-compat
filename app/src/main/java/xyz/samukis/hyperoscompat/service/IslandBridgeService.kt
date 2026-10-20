@@ -15,6 +15,7 @@ import xyz.samukis.hyperoscompat.bridge.BridgeRegistry
 import xyz.samukis.hyperoscompat.bridge.IslandSpec
 import xyz.samukis.hyperoscompat.inspector.NotificationLog
 import xyz.samukis.hyperoscompat.island.IslandPoster
+import xyz.samukis.hyperoscompat.island.MicMute
 import xyz.samukis.hyperoscompat.prefs.Settings
 
 /**
@@ -54,6 +55,7 @@ class IslandBridgeService : NotificationListenerService(),
 
     override fun onDestroy() {
         if (instance === this) instance = null
+        MicMute.release(this)
         settings.unregisterListener(this)
         super.onDestroy()
     }
@@ -93,7 +95,13 @@ class IslandBridgeService : NotificationListenerService(),
         synchronized(active) {
             active.remove(sbn.key)?.let { cancelOurs(it.id) }
             firstSeen.remove(sbn.key)
+            releaseMicIfIdle()
         }
+    }
+
+    /** No call island left: give the microphone back if we were the ones muting it. */
+    private fun releaseMicIfIdle() {
+        if (active.isEmpty()) MicMute.release(this)
     }
 
     private fun handlePosted(sbn: StatusBarNotification) {
@@ -113,6 +121,7 @@ class IslandBridgeService : NotificationListenerService(),
                     if (inspector) NotificationLog.event(this, "island dropped: $key no longer looks like a call")
                 }
                 firstSeen.remove(key)
+                releaseMicIfIdle()
                 return
             }
             firstSeen[key] = seen
@@ -154,6 +163,7 @@ class IslandBridgeService : NotificationListenerService(),
                     if (inspector) NotificationLog.event(this, "resync: dropped orphan island for $key")
                 }
             }
+            releaseMicIfIdle()
         }
         live.forEach { if (it.packageName != packageName) handlePosted(it) }
     }

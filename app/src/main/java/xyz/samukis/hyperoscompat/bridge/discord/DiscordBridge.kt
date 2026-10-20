@@ -10,13 +10,18 @@ import xyz.samukis.hyperoscompat.bridge.CallKeywords
 import xyz.samukis.hyperoscompat.bridge.CallState
 import xyz.samukis.hyperoscompat.bridge.IslandAction
 import xyz.samukis.hyperoscompat.bridge.IslandSpec
+import xyz.samukis.hyperoscompat.island.MicMute
+import xyz.samukis.hyperoscompat.receiver.MuteReceiver
 
 /**
  * Discord: incoming calls (answer / decline) and ongoing voice sessions (mute / disconnect).
  * Detection is heuristic on purpose: Discord does not use CallStyle consistently, so we look at
  * the category, the action titles and the texts, in English and Spanish.
+ *
+ * Observed on a real device (Oct 2026): the voice notification is ongoing, has no chronometer,
+ * a title like "Voz conectada — <canal>" and exactly one action, "Desconectar".
  */
-class DiscordBridge(context: Context) : AppBridge {
+class DiscordBridge(private val context: Context) : AppBridge {
     override val packageName = PACKAGE
     override val nameRes = R.string.app_discord
     override val accentColor = "#5865F2"
@@ -30,11 +35,14 @@ class DiscordBridge(context: Context) : AppBridge {
         if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return null
 
         val extras = n.extras
-        val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim().orEmpty()
+        val rawTitle = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim().orEmpty()
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.trim().orEmpty()
         val sub = extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString()?.trim().orEmpty()
         val template = extras.getString(Notification.EXTRA_TEMPLATE).orEmpty()
-        val haystack = "$title $text $sub".lowercase()
+        val haystack = "$rawTitle $text $sub".lowercase()
+
+        // "Missed call" / "Call ended" style notifications are history, not a live call.
+        if (kw.looksEnded(haystack) || n.category == Notification.CATEGORY_MISSED_CALL) return null
 
         val actions = n.actions?.filter { it.actionIntent != null }.orEmpty()
         val roles = actions.map { kw.roleOf(it.title) }
@@ -45,9 +53,6 @@ class DiscordBridge(context: Context) : AppBridge {
         val isCallCategory = n.category == Notification.CATEGORY_CALL || template.endsWith("CallStyle")
         val textIncoming = kw.looksIncoming(haystack)
         val textOngoing = kw.looksOngoing(haystack)
-
-        // "Missed call" / "Call ended" style notifications are history, not a live call.
-        if (kw.looksEnded(haystack) || n.category == Notification.CATEGORY_MISSED_CALL) return null
 
         val isCall = isCallCategory || hasAnswer || hasHangup || textIncoming || (isOngoingFlag && textOngoing)
         if (!isCall) return null
@@ -65,8 +70,13 @@ class DiscordBridge(context: Context) : AppBridge {
             else -> firstSeen
         }
 
+        // "Voz conectada — General" reads better as title "General", subtitle "Voz conectada".
+        val (title, titleTail) = splitTitle(rawTitle)
         val displayTitle = title.ifEmpty { "Discord" }
-        val subtitle = if (state == CallState.INCOMING) incomingLabel else text.ifEmpty { ongoingLabel }
+        val subtitle = when (state) {
+            CallState.INCOMING -> incomingLabel
+            CallState.ONGOING -> titleTail ?: text.ifEmpty { ongoingLabel }
+        }
 
         return IslandSpec(
             state = state,
@@ -79,30 +89,54 @@ class DiscordBridge(context: Context) : AppBridge {
         )
     }
 
-    /** Up to two buttons, ordered the way phones do it: red on the left, green on the right. */
+    /** Splits "Voz conectada — General" into ("General", "Voz conectada"). No separator: (title, null). */
+    private fun splitTitle(raw: String): Pair<String, String?> {
+        for (sep in SEPARATORS) {
+            val i = raw.indexOf(sep)
+            if (i > 0 && i + sep.length < raw.length) {
+                return raw.substring(i + sep.length).trim() to raw.substring(0, i).trim()
+            }
+        }
+        return raw to null
+    }
+
+    /** Up to two round buttons, ordered the way phones do it: neutral/red on the left, green on the right. */
     private fun pickActions(
         actions: List<Notification.Action>,
         roles: List<ActionRole>,
         state: CallState,
     ): List<IslandAction> {
         fun find(role: ActionRole): Int? = roles.indexOf(role).takeIf { it >= 0 }
+        fun fromSource(i: Int) = IslandAction(roles[i], actions[i].title ?: "", null, actions[i].actionIntent, sourceIndex = i)
 
-        val wanted = if (state == CallState.INCOMING) {
-            listOfNotNull(find(ActionRole.DECLINE), find(ActionRole.ANSWER))
-        } else {
-            listOfNotNull(find(ActionRole.MUTE), find(ActionRole.HANGUP))
+        if (state == CallState.INCOMING) {
+            val wanted = listOfNotNull(find(ActionRole.DECLINE), find(ActionRole.ANSWER))
+            val filled = if (wanted.size < 2) wanted + actions.indices.filter { it !in wanted }.take(2 - wanted.size) else wanted
+            return filled.map(::fromSource)
         }
-        // Fill the second slot with any other action Discord offers (e.g. a mute we did not recognise).
-        val filled = if (wanted.size < 2) {
-            wanted + actions.indices.filter { it !in wanted }.take(2 - wanted.size)
-        } else wanted
-        return filled.map { i ->
-            val a = actions[i]
-            IslandAction(roles[i], a.title ?: "", a.getIcon(), a.actionIntent, sourceIndex = i)
-        }
+
+        // Ongoing: a mute button (Discord's own if it has one, else the system mic mute) and hang up.
+        val mute = find(ActionRole.MUTE)?.let(::fromSource) ?: systemMuteAction()
+        val hangup = find(ActionRole.HANGUP)?.let(::fromSource)
+            ?: actions.indices.firstOrNull { roles[it] != ActionRole.MUTE }?.let(::fromSource)
+        return listOfNotNull(mute, hangup)
+    }
+
+    private fun systemMuteAction(): IslandAction {
+        val muted = MicMute.isMuted(context)
+        return IslandAction(
+            role = ActionRole.MUTE,
+            title = context.getString(if (muted) R.string.action_unmute else R.string.action_mute),
+            icon = null,
+            intent = MuteReceiver.pendingIntent(context),
+            sourceIndex = -1,
+            iconRes = if (muted) R.drawable.ic_mic_off else R.drawable.ic_mic,
+            bgColor = if (muted) "#FF9F0A" else "#3A3A3C",
+        )
     }
 
     companion object {
         const val PACKAGE = "com.discord"
+        private val SEPARATORS = listOf(" — ", " – ", " - ", " | ")
     }
 }

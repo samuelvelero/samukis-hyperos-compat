@@ -7,6 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings as SysSettings
 import android.view.LayoutInflater
 import android.view.View
@@ -33,6 +35,7 @@ import xyz.samukis.hyperoscompat.service.IslandBridgeService
 class MainActivity : AppCompatActivity() {
     private lateinit var b: ActivityMainBinding
     private lateinit var settings: Settings
+    private val handler = Handler(Looper.getMainLooper())
 
     private val requestPostNotifications =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -66,6 +69,34 @@ class MainActivity : AppCompatActivity() {
         refreshStatus()
         // Opening the app is a good moment to drop islands whose call already ended.
         IslandBridgeService.instance?.resync()
+        ensureServiceBound()
+    }
+
+    override fun onPause() {
+        handler.removeCallbacksAndMessages(null)
+        super.onPause()
+    }
+
+    /**
+     * After an update HyperOS often leaves the listener unbound even though access is granted.
+     * Ask for a rebind; if that is ignored, toggling the component forces the system to bind again.
+     */
+    private fun ensureServiceBound() {
+        val listenerOk = NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
+        if (!listenerOk || IslandBridgeService.connected) return
+        IslandBridgeService.requestRebind(this)
+        handler.postDelayed({
+            if (IslandBridgeService.connected) { refreshStatus(); return@postDelayed }
+            val component = ComponentName(this, IslandBridgeService::class.java)
+            packageManager.setComponentEnabledSetting(
+                component, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP,
+            )
+            packageManager.setComponentEnabledSetting(
+                component, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP,
+            )
+            IslandBridgeService.requestRebind(this)
+            handler.postDelayed({ refreshStatus() }, 3000)
+        }, 2500)
     }
 
     private fun hasPostPermission() =

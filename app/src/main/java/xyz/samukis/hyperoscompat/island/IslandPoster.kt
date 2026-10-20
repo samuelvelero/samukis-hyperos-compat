@@ -5,8 +5,15 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.drawable.Icon
+import androidx.annotation.DrawableRes
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.graphics.toColorInt
 import io.github.d4viddf.hyperisland_kit.HyperAction
 import io.github.d4viddf.hyperisland_kit.HyperIslandNotification
 import io.github.d4viddf.hyperisland_kit.HyperPicture
@@ -32,6 +39,7 @@ import xyz.samukis.hyperoscompat.receiver.DismissReceiver
 class IslandPoster(private val context: Context, private val settings: Settings) {
     private val nm = context.getSystemService(NotificationManager::class.java)
     private val iconCache = HashMap<String, Icon>()
+    private val roundIconCache = HashMap<String, Icon>()
 
     /**
      * @param sourceKey key of the source notification; when given, island buttons are routed through
@@ -60,14 +68,17 @@ class IslandPoster(private val context: Context, private val settings: Settings)
             val intent = if (sourceKey != null && a.sourceIndex >= 0) {
                 ActionReceiver.pendingIntent(context, id, i, sourceKey, a.sourceIndex)
             } else a.intent
+            val bg = a.bgColor ?: colorFor(a.role)
+            // Always our own round glyph: with an icon HyperOS draws a circular button instead of a text pill.
+            val icon = roundIcon(if (a.iconRes != 0) a.iconRes else glyphFor(a.role), bg)
             island.addAction(
                 HyperAction(
                     key = key,
                     title = a.title,
-                    icon = a.icon,
+                    icon = icon,
                     pendingIntent = intent,
                     actionIntentType = ACTION_TYPE_BROADCAST,
-                    actionBgColor = colorFor(a.role),
+                    actionBgColor = bg,
                     titleColor = "#FFFFFF",
                 )
             )
@@ -119,7 +130,8 @@ class IslandPoster(private val context: Context, private val settings: Settings)
             val intent = if (sourceKey != null && a.sourceIndex >= 0) {
                 ActionReceiver.pendingIntent(context, id, i, sourceKey, a.sourceIndex)
             } else a.intent
-            builder.addAction(Notification.Action.Builder(a.icon, a.title, intent).build())
+            val glyph = Icon.createWithResource(context, if (a.iconRes != 0) a.iconRes else glyphFor(a.role))
+            builder.addAction(Notification.Action.Builder(glyph, a.title, intent).build())
         }
 
         val notification = builder.build()
@@ -141,12 +153,7 @@ class IslandPoster(private val context: Context, private val settings: Settings)
             subtitle = context.getString(R.string.demo_text),
             startTime = System.currentTimeMillis(),
             actions = listOf(
-                IslandAction(
-                    ActionRole.HANGUP,
-                    context.getString(R.string.demo_dismiss),
-                    Icon.createWithResource(context, R.drawable.ic_stat_island),
-                    dismiss,
-                )
+                IslandAction(ActionRole.HANGUP, context.getString(R.string.demo_dismiss), null, dismiss)
             ),
             avatar = null,
             accentColor = "#5865F2",
@@ -157,7 +164,32 @@ class IslandPoster(private val context: Context, private val settings: Settings)
     private fun colorFor(role: ActionRole) = when (role) {
         ActionRole.DECLINE, ActionRole.HANGUP -> "#FF3B30"
         ActionRole.ANSWER -> "#34C759"
-        else -> "#8E8E93"
+        else -> "#3A3A3C"
+    }
+
+    private fun glyphFor(role: ActionRole) = when (role) {
+        ActionRole.DECLINE, ActionRole.HANGUP -> R.drawable.ic_call_end
+        ActionRole.ANSWER -> R.drawable.ic_call
+        ActionRole.MUTE -> R.drawable.ic_mic
+        ActionRole.OTHER -> R.drawable.ic_stat_island
+    }
+
+    /** White glyph centred on a filled circle, rendered once per (glyph, colour) and cached. */
+    private fun roundIcon(@DrawableRes glyphRes: Int, bgHex: String): Icon = roundIconCache.getOrPut("$glyphRes/$bgHex") {
+        val size = 132
+        val bitmap = createBitmap(size, size)
+        val canvas = Canvas(bitmap)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = try { bgHex.toColorInt() } catch (_: Exception) { 0xFF3A3A3C.toInt() }
+        }
+        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
+        AppCompatResources.getDrawable(context, glyphRes)?.mutate()?.let { d ->
+            d.setTint(Color.WHITE)
+            val inset = (size * 0.27f).toInt()
+            d.setBounds(inset, inset, size - inset, size - inset)
+            d.draw(canvas)
+        }
+        Icon.createWithBitmap(bitmap)
     }
 
     private fun appIcon(pkg: String): Icon = iconCache.getOrPut(pkg) {
