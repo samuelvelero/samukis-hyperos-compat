@@ -27,10 +27,18 @@
     <string name="status_focus">Focus notifications</string>
     <string name="status_service">Bridge service</string>
     <string name="status_island">Hyper Island on this ROM</string>
+    <string name="check_autostart">Autostart (HyperOS)</string>
+    <string name="check_battery">Battery optimisation</string>
+    <string name="blocker_autostart">Allow Autostart for this app in HyperOS so the bridge survives reboots and background clean-ups.</string>
+    <string name="blocker_battery">Exclude this app from battery optimisation so HyperOS does not kill the bridge in the background.</string>
+    <string name="action_review">Review</string>
+    <string name="action_exclude">Exclude</string>
 
     <!-- Apps -->
     <string name="section_apps">Apps</string>
     <string name="apps_hint">Switch off the ones you do not want on the island.</string>
+    <string name="pref_islands_enabled">Islands enabled</string>
+    <string name="pref_islands_hint">Also a Quick Settings tile: pull down the shade, edit tiles and add “Samukis islands”.</string>
     <string name="cat_calls">Calls and meetings</string>
     <string name="cat_transport">Rides and deliveries</string>
     <string name="cat_transfers">Uploads and downloads</string>
@@ -62,6 +70,13 @@
     <string name="diag_hint">Only needed when something does not show up.</string>
     <string name="pref_show_in_shade">Also show islands in the notification shade</string>
     <string name="pref_inspector">Log matching notifications (inspector)</string>
+    <string name="pref_respect_dnd">Respect Do Not Disturb (calls still show)</string>
+    <string name="action_autostart_settings">Autostart settings</string>
+    <string name="action_battery_settings">App battery settings</string>
+    <string name="toast_no_activity">That settings page is not available on this ROM.</string>
+    <string name="tile_label">Samukis islands</string>
+    <string name="tile_active">Active</string>
+    <string name="tile_paused">Paused</string>
     <string name="action_open_inspector">Open inspector</string>
     <string name="toast_rebind">Rebind requested</string>
     <string name="toast_need_post_permission">Allow notifications for this app first</string>
@@ -85,6 +100,7 @@
     <string name="inspector_title">Notification inspector</string>
     <string name="inspector_empty">Nothing logged yet. Enable the inspector on the main screen, then use one of the supported apps.</string>
     <string name="action_copy">Copy</string>
+    <string name="action_share">Share</string>
     <string name="action_clear">Clear</string>
     <string name="action_refresh">Refresh</string>
     <string name="toast_copied">Copied</string>

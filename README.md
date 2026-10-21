@@ -35,6 +35,15 @@ estados están en `res/values/arrays.xml`, en español e inglés.
 
 3. Obtainium descargará el APK del último Release y avisará cuando haya versiones nuevas.
 
+## Calidad de vida
+
+- **Mosaico de ajustes rápidos "Islas Samukis"**: pausa o reanuda todas las islas con un toque.
+- **Respetar No molestar**: con No molestar activo solo las llamadas generan isla (opcional).
+- **Arranque y actualizaciones**: un receptor re-vincula el servicio tras reiniciar o actualizar por Obtainium.
+- **Inicio automático y batería**: la pantalla principal comprueba el permiso de inicio automático de
+  HyperOS y la optimización de batería, y abre esas páginas de ajustes directamente.
+- **Acceso directo al inspector** desde el icono de la app, y botón Compartir en el inspector.
+
 ## Configuración en el teléfono
 
 1. Abre la app y concede **Acceso a notificaciones**.

@@ -12,7 +12,7 @@ class Settings(context: Context) {
     fun isAppEnabled(pkg: String): Boolean = sp.getBoolean(appKey(pkg), true)
     fun setAppEnabled(pkg: String, enabled: Boolean) = sp.edit { putBoolean(appKey(pkg), enabled) }
 
-    /** On by default while the Discord translator is being tuned against real payloads. */
+    /** On by default while the translators are being tuned against real payloads. */
     var inspectorEnabled: Boolean
         get() = sp.getBoolean(KEY_INSPECTOR, true)
         set(value) = sp.edit { putBoolean(KEY_INSPECTOR, value) }
@@ -20,6 +20,16 @@ class Settings(context: Context) {
     var showInShade: Boolean
         get() = sp.getBoolean(KEY_SHADE, true)
         set(value) = sp.edit { putBoolean(KEY_SHADE, value) }
+
+    /** Master switch, also driven by the Quick Settings tile. */
+    var paused: Boolean
+        get() = sp.getBoolean(KEY_PAUSED, false)
+        set(value) = sp.edit { putBoolean(KEY_PAUSED, value) }
+
+    /** While Do Not Disturb is on, only calls get an island. */
+    var respectDnd: Boolean
+        get() = sp.getBoolean(KEY_DND, false)
+        set(value) = sp.edit { putBoolean(KEY_DND, value) }
 
     fun registerListener(l: SharedPreferences.OnSharedPreferenceChangeListener) =
         sp.registerOnSharedPreferenceChangeListener(l)
@@ -30,6 +40,8 @@ class Settings(context: Context) {
     companion object {
         const val KEY_INSPECTOR = "inspector"
         const val KEY_SHADE = "show_in_shade"
+        const val KEY_PAUSED = "paused"
+        const val KEY_DND = "respect_dnd"
         fun appKey(pkg: String) = "app_$pkg"
     }
 }

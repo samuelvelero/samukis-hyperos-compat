@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_stat_island"
+        android:shortcutId="inspector"
+        android:shortcutLongLabel="@string/inspector_title"
+        android:shortcutShortLabel="@string/inspector_title">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="xyz.samukis.hyperoscompat.ui.InspectorActivity"
+            android:targetPackage="xyz.samukis.hyperoscompat" />
+    </shortcut>
+</shortcuts>

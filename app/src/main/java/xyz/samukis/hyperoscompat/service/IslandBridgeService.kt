@@ -12,6 +12,7 @@ import android.service.notification.StatusBarNotification
 import xyz.samukis.hyperoscompat.bridge.ActionRole
 import xyz.samukis.hyperoscompat.bridge.AppBridge
 import xyz.samukis.hyperoscompat.bridge.BridgeRegistry
+import xyz.samukis.hyperoscompat.bridge.IslandKind
 import xyz.samukis.hyperoscompat.bridge.IslandSpec
 import xyz.samukis.hyperoscompat.inspector.NotificationLog
 import xyz.samukis.hyperoscompat.island.IslandPoster
@@ -35,6 +36,8 @@ class IslandBridgeService : NotificationListenerService(),
     /** Source packages whose bridge is switched on. */
     @Volatile private var enabled: Set<String> = emptySet()
     @Volatile private var inspector = false
+    @Volatile private var paused = false
+    @Volatile private var respectDnd = false
 
     private class Active(val id: Int, val hash: Int, val pkg: String, val spec: IslandSpec)
 
@@ -105,13 +108,17 @@ class IslandBridgeService : NotificationListenerService(),
         val pkg = sbn.packageName
         if (pkg == packageName) return
         val bridge = bridgeByPackage[pkg] ?: return
-        if (pkg !in enabled) return
+        if (pkg !in enabled || paused) return
         if (inspector) NotificationLog.record(this, sbn)
 
         val key = sbn.key
         synchronized(active) {
             val seen = firstSeen[key] ?: System.currentTimeMillis()
-            val spec = bridge.translate(sbn, seen)
+            var spec = bridge.translate(sbn, seen)
+            // Do Not Disturb: only calls are worth an island while it is on.
+            if (spec != null && respectDnd && dndActive() &&
+                spec.kind != IslandKind.INCOMING && spec.kind != IslandKind.TIMER
+            ) spec = null
             if (spec == null) {
                 active.remove(key)?.let {
                     cancelOurs(it.id)
@@ -218,14 +225,21 @@ class IslandBridgeService : NotificationListenerService(),
         poster.cancel(id)
     }
 
+    private fun dndActive(): Boolean = try {
+        val filter = currentInterruptionFilter
+        filter != INTERRUPTION_FILTER_ALL && filter != INTERRUPTION_FILTER_UNKNOWN
+    } catch (_: Exception) {
+        false
+    }
+
     override fun onSharedPreferenceChanged(sp: SharedPreferences?, key: String?) {
         reloadPrefs()
-        // Drop islands of apps that were just disabled.
+        // Drop islands of apps that were just disabled, or everything when paused.
         synchronized(active) {
             val it = active.entries.iterator()
             while (it.hasNext()) {
                 val (srcKey, island) = it.next()
-                if (island.pkg !in enabled) {
+                if (paused || island.pkg !in enabled) {
                     cancelOurs(island.id)
                     it.remove()
                     firstSeen.remove(srcKey)
@@ -237,6 +251,8 @@ class IslandBridgeService : NotificationListenerService(),
     private fun reloadPrefs() {
         enabled = bridges.filter { settings.isAppEnabled(it.packageName) }.flatMapTo(HashSet()) { it.packages }
         inspector = settings.inspectorEnabled
+        paused = settings.paused
+        respectDnd = settings.respectDnd
     }
 
     private fun idFor(key: String): Int = ID_BASE + (key.hashCode() and 0x0FFFFFFF)

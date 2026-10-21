@@ -24,9 +24,17 @@
     <string name="status_focus">Notificaciones de foco</string>
     <string name="status_service">Servicio puente</string>
     <string name="status_island">Hyper Island en esta ROM</string>
+    <string name="check_autostart">Inicio automático (HyperOS)</string>
+    <string name="check_battery">Optimización de batería</string>
+    <string name="blocker_autostart">Permite el inicio automático de esta app en HyperOS para que el puente sobreviva a reinicios y limpiezas en segundo plano.</string>
+    <string name="blocker_battery">Excluye esta app de la optimización de batería para que HyperOS no mate el puente en segundo plano.</string>
+    <string name="action_review">Revisar</string>
+    <string name="action_exclude">Excluir</string>
 
     <string name="section_apps">Apps</string>
     <string name="apps_hint">Desactiva las que no quieras ver en la isla.</string>
+    <string name="pref_islands_enabled">Islas activadas</string>
+    <string name="pref_islands_hint">También hay un mosaico de ajustes rápidos: baja el panel, edita los mosaicos y añade “Islas Samukis”.</string>
     <string name="cat_calls">Llamadas y reuniones</string>
     <string name="cat_transport">Viajes y pedidos</string>
     <string name="cat_transfers">Subidas y descargas</string>
@@ -46,6 +54,13 @@
     <string name="diag_hint">Solo hace falta cuando algo no aparece.</string>
     <string name="pref_show_in_shade">Mostrar también las islas en el panel de notificaciones</string>
     <string name="pref_inspector">Registrar notificaciones reconocidas (inspector)</string>
+    <string name="pref_respect_dnd">Respetar No molestar (las llamadas sí se muestran)</string>
+    <string name="action_autostart_settings">Inicio automático</string>
+    <string name="action_battery_settings">Batería de la app</string>
+    <string name="toast_no_activity">Esa pantalla de ajustes no existe en esta ROM.</string>
+    <string name="tile_label">Islas Samukis</string>
+    <string name="tile_active">Activas</string>
+    <string name="tile_paused">En pausa</string>
     <string name="action_open_inspector">Abrir inspector</string>
     <string name="toast_rebind">Reinicio solicitado</string>
     <string name="toast_need_post_permission">Primero permite las notificaciones de esta app</string>
@@ -65,6 +80,7 @@
     <string name="inspector_title">Inspector de notificaciones</string>
     <string name="inspector_empty">Aún no hay nada registrado. Activa el inspector en la pantalla principal y usa alguna de las apps soportadas.</string>
     <string name="action_copy">Copiar</string>
+    <string name="action_share">Compartir</string>
     <string name="action_clear">Limpiar</string>
     <string name="action_refresh">Actualizar</string>
     <string name="toast_copied">Copiado</string>

@@ -1,7 +1,6 @@
 package xyz.samukis.hyperoscompat.ui
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -103,12 +102,20 @@ class MainActivity : AppCompatActivity() {
         val focus = HyperOsChecks.hasFocusPermission(this)
         val service = IslandBridgeService.connected
         val island = HyperOsChecks.isIslandSupported()
+        val autostart = HyperOsChecks.isAutostartAllowed(this) // null = ROM does not say
+        val battery = HyperOsChecks.isIgnoringBatteryOptimizations(this)
 
         val askPost: () -> Unit = { requestPostNotifications.launch(Manifest.permission.POST_NOTIFICATIONS) }
         val rebind: () -> Unit = {
             IslandBridgeService.requestRebind(this)
             Toast.makeText(this, R.string.toast_rebind, Toast.LENGTH_SHORT).show()
             handler.postDelayed({ refreshStatus() }, 2500)
+        }
+        val openAutostart: () -> Unit = { safeStart(HyperOsChecks.autostartIntent()) }
+        val askBattery: () -> Unit = {
+            safeStart(
+                Intent(SysSettings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, "package:$packageName".toUri()),
+            )
         }
 
         renderChecks(
@@ -117,6 +124,9 @@ class MainActivity : AppCompatActivity() {
                 Check(R.string.status_listener, listener, ::openListenerSettings),
                 Check(R.string.status_focus, focus, ::openAppNotificationSettings),
                 Check(R.string.status_service, service, if (listener) rebind else null),
+                // Unknown autostart state is shown as a warning the user can review, never as a blocker.
+                Check(R.string.check_autostart, autostart == true, openAutostart),
+                Check(R.string.check_battery, battery, askBattery),
                 Check(R.string.status_island, island, null),
             )
         )
@@ -127,6 +137,8 @@ class MainActivity : AppCompatActivity() {
             !listener -> hero(Hero.BLOCKED, R.string.hero_blocked_title, R.string.blocker_listener, R.string.action_grant, ::openListenerSettings)
             !focus -> hero(Hero.BLOCKED, R.string.hero_blocked_title, R.string.blocker_focus, R.string.action_open, ::openAppNotificationSettings)
             !service -> hero(Hero.BLOCKED, R.string.hero_blocked_title, R.string.blocker_service, R.string.action_rebind, rebind)
+            autostart == false -> hero(Hero.WARN, R.string.hero_warn_title, R.string.blocker_autostart, R.string.action_review, openAutostart)
+            !battery -> hero(Hero.WARN, R.string.hero_warn_title, R.string.blocker_battery, R.string.action_exclude, askBattery)
             !island -> hero(Hero.WARN, R.string.hero_warn_title, R.string.blocker_island, R.string.action_test_island, ::postDemo)
             else -> hero(Hero.OK, R.string.hero_ok_title, R.string.hero_ok_body, R.string.action_test_island, ::postDemo)
         }
@@ -188,10 +200,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openAppNotificationSettings() {
-        startActivity(
+        safeStart(
             Intent(SysSettings.ACTION_APP_NOTIFICATION_SETTINGS)
                 .putExtra(SysSettings.EXTRA_APP_PACKAGE, packageName)
         )
+    }
+
+    /** HyperOS pages are not guaranteed to exist on every ROM; say so instead of crashing. */
+    private fun safeStart(intent: Intent) {
+        try {
+            startActivity(intent)
+        } catch (_: Exception) {
+            Toast.makeText(this, R.string.toast_no_activity, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun postDemo() {
@@ -284,12 +305,20 @@ class MainActivity : AppCompatActivity() {
     // ---------------------------------------------------------------- diagnostics
 
     private fun setupDiagnostics() {
+        b.switchPaused.isChecked = !settings.paused
+        b.switchPaused.setOnCheckedChangeListener { _, checked -> settings.paused = !checked }
+
         b.switchShade.isChecked = settings.showInShade
         b.switchShade.setOnCheckedChangeListener { _, checked -> settings.showInShade = checked }
+
+        b.switchDnd.isChecked = settings.respectDnd
+        b.switchDnd.setOnCheckedChangeListener { _, checked -> settings.respectDnd = checked }
 
         b.switchInspector.isChecked = settings.inspectorEnabled
         b.switchInspector.setOnCheckedChangeListener { _, checked -> settings.inspectorEnabled = checked }
 
+        b.btnAutostart.setOnClickListener { safeStart(HyperOsChecks.autostartIntent()) }
+        b.btnBattery.setOnClickListener { safeStart(HyperOsChecks.batterySaverIntent(this)) }
         b.btnInspector.setOnClickListener { startActivity(Intent(this, InspectorActivity::class.java)) }
         b.btnRebind.setOnClickListener {
             IslandBridgeService.requestRebind(this)
@@ -301,24 +330,3 @@ class MainActivity : AppCompatActivity() {
     private fun color(@AttrRes attr: Int): Int = MaterialColors.getColor(b.root, attr)
 }
 
-/** Read-only probes of the HyperOS focus-notification plumbing. */
-object HyperOsChecks {
-    fun hasFocusPermission(context: Context): Boolean = try {
-        val extras = Bundle().apply { putString("package", context.packageName) }
-        val result = context.contentResolver.call(
-            "content://miui.statusbar.notification.public".toUri(), "canShowFocus", null, extras,
-        )
-        result?.getBoolean("canShowFocus", false) ?: false
-    } catch (_: Exception) {
-        false
-    }
-
-    @SuppressLint("PrivateApi")
-    fun isIslandSupported(): Boolean = try {
-        val cls = Class.forName("android.os.SystemProperties")
-        val m = cls.getMethod("getBoolean", String::class.java, Boolean::class.javaPrimitiveType)
-        m.invoke(null, "persist.sys.feature.island", false) as Boolean
-    } catch (_: Exception) {
-        false
-    }
-}

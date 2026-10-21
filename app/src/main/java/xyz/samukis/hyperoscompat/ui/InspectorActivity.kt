@@ -2,6 +2,7 @@ package xyz.samukis.hyperoscompat.ui
 
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -29,6 +30,13 @@ class InspectorActivity : AppCompatActivity() {
             val cm = getSystemService(ClipboardManager::class.java)
             cm.setPrimaryClip(ClipData.newPlainText("inspector", b.log.text))
             Toast.makeText(this, R.string.toast_copied, Toast.LENGTH_SHORT).show()
+        }
+        b.btnShare.setOnClickListener {
+            val send = Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .putExtra(Intent.EXTRA_SUBJECT, getString(R.string.inspector_title))
+                .putExtra(Intent.EXTRA_TEXT, b.log.text.toString())
+            startActivity(Intent.createChooser(send, getString(R.string.action_share)))
         }
         b.btnClear.setOnClickListener { NotificationLog.clear(this); load() }
     }
