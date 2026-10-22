@@ -22,6 +22,10 @@ import xyz.samukis.hyperoscompat.prefs.Settings
  * The whole runtime. Android binds this once and calls us only when a notification is posted,
  * updated or removed, so idle cost is zero: no foreground service, no polling, no wake locks.
  * Every callback starts with a package check so unrelated notifications cost one map lookup.
+ *
+ * Islands are indexed by an *island key* chosen by the bridge ([AppBridge.islandKeyFor]). Session
+ * bridges map every notification of an app to one key, so several notifications feed one island.
+ * The notification that produced the island's current content is its *owner* (used for buttons).
  */
 class IslandBridgeService : NotificationListenerService(),
     SharedPreferences.OnSharedPreferenceChangeListener {
@@ -39,10 +43,11 @@ class IslandBridgeService : NotificationListenerService(),
     @Volatile private var paused = false
     @Volatile private var respectDnd = false
 
-    private class Active(val id: Int, val hash: Int, val pkg: String, val spec: IslandSpec)
+    private class Active(val id: Int, val hash: Int, val pkg: String, val spec: IslandSpec, val sourceKey: String)
 
-    /** Source notification key -> our island. Guarded by itself. */
+    /** Island key -> our island. Guarded by itself. */
     private val active = HashMap<String, Active>()
+    /** Island key -> when it first appeared (fallback start time for timers). */
     private val firstSeen = HashMap<String, Long>()
 
     /** Ids we cancelled ourselves, so their removal callback is not mistaken for a user dismissal. */
@@ -99,9 +104,19 @@ class IslandBridgeService : NotificationListenerService(),
         val bridge = bridgeByPackage[sbn.packageName] ?: return
         bridge.onRemoved(sbn)
         if (inspector) NotificationLog.event(this, "REMOVED ${sbn.key} reason=$reason")
-        synchronized(active) {
-            active.remove(sbn.key)?.let { cancelOurs(it.id) }
-            firstSeen.remove(sbn.key)
+        val ikey = bridge.islandKeyFor(sbn)
+        val owned = synchronized(active) { active[ikey]?.sourceKey == sbn.key }
+        if (owned) {
+            // Apps often swap one notification for another (ringing -> in call). Wait a moment so
+            // the replacement can take the island over in place instead of the island blinking.
+            mainHandler.postDelayed({
+                synchronized(active) {
+                    if (active[ikey]?.sourceKey == sbn.key) releaseOwner(bridge, ikey, sbn.key, sbn.packageName)
+                }
+            }, HANDOVER_MS)
+        } else if (bridge.takeRefreshRequest()) {
+            // A non-owner went away but changed the session (e.g. one of several transfers ended).
+            refreshPackage(sbn.packageName, sbn.key)
         }
     }
 
@@ -121,80 +136,95 @@ class IslandBridgeService : NotificationListenerService(),
         if (bridge.takeRefreshRequest() && !fromRefresh) refreshPackage(pkg, sbn.key)
     }
 
-    /** Re-translates the live notifications behind this package's islands, except [exceptKey]. */
+    /** Re-translates the owners of this package's islands, except [exceptKey]. */
     private fun refreshPackage(pkg: String, exceptKey: String) {
-        val keys = synchronized(active) { active.filter { it.value.pkg == pkg && it.key != exceptKey }.keys.toSet() }
-        if (keys.isEmpty()) return
-        val live = try { activeNotifications } catch (_: Exception) { null } ?: return
-        live.filter { it.key in keys }.forEach { handlePosted(it, fromRefresh = true) }
+        val owners = synchronized(active) {
+            active.values.filter { it.pkg == pkg && it.sourceKey != exceptKey }.map { it.sourceKey }.toSet()
+        }
+        if (owners.isEmpty()) return
+        val live = liveNotifications() ?: return
+        live.filter { it.key in owners }.forEach { handlePosted(it, fromRefresh = true) }
     }
 
     /** Translates one source notification and posts, updates or drops its island. Caller holds [active]. */
     private fun applyLocked(bridge: AppBridge, sbn: StatusBarNotification, pkg: String) {
         val key = sbn.key
-        run {
-            val seen = firstSeen[key] ?: System.currentTimeMillis()
-            var spec = bridge.translate(sbn, seen)
-            // Do Not Disturb: only calls are worth an island while it is on.
-            if (spec != null && respectDnd && dndActive() &&
-                spec.kind != IslandKind.INCOMING && spec.kind != IslandKind.TIMER
-            ) spec = null
-            if (spec == null) {
-                active.remove(key)?.let {
-                    cancelOurs(it.id)
-                    if (inspector) NotificationLog.event(this, "island dropped: $key no longer qualifies")
-                }
-                firstSeen.remove(key)
-                return
-            }
-            firstSeen[key] = seen
-            val hash = spec.contentHash()
-            val current = active[key]
-            if (current != null && current.hash == hash) return
+        val ikey = bridge.islandKeyFor(sbn)
+        val seen = firstSeen[ikey] ?: System.currentTimeMillis()
+        var spec = bridge.translate(sbn, seen)
+        // Do Not Disturb: only calls are worth an island while it is on.
+        if (spec != null && respectDnd && dndActive() &&
+            spec.kind != IslandKind.INCOMING && spec.kind != IslandKind.TIMER
+        ) spec = null
+        val current = active[ikey]
+        if (spec == null) {
+            // Only the owner can take its island down; a push that is "not an island" leaves it alone.
+            if (current?.sourceKey == key) releaseOwner(bridge, ikey, key, pkg)
+            return
+        }
+        firstSeen[ikey] = seen
+        val hash = spec.contentHash()
+        if (current != null && current.hash == hash && current.sourceKey == key) return
 
-            // Timed status islands (order updates) come as separate notifications, and some apps
-            // (Uber) must only ever show one island: keep only the newest one per app.
-            if (spec.autoDismissMs > 0 || bridge.singleIsland) {
-                val stale = active.entries.filter { it.value.pkg == pkg && it.key != key }
-                stale.forEach { cancelOurs(it.value.id); firstSeen.remove(it.key) }
-                active.keys.removeAll(stale.map { it.key }.toSet())
-            }
+        // Timed status islands (order updates) come as separate notifications, and some apps
+        // must only ever show one island: keep only this one for the app.
+        if (spec.autoDismissMs > 0 || bridge.singleIsland) {
+            val stale = active.entries.filter { it.value.pkg == pkg && it.key != ikey }
+            stale.forEach { cancelOurs(it.value.id); firstSeen.remove(it.key) }
+            active.keys.removeAll(stale.map { it.key }.toSet())
+        }
 
-            val id = current?.id ?: idFor(key)
-            try {
-                poster.post(id, pkg, spec, sbn.notification, sourceKey = key)
-                active[key] = Active(id, hash, pkg, spec)
-                if (inspector) NotificationLog.event(
-                    this,
-                    "island ${if (current == null) "posted" else "updated"}: ${spec.kind} \"${spec.title}\" " +
-                        "pill=${spec.pillText} trailing=${spec.trailing} pin=${spec.highlight} progress=${spec.progress} " +
-                        "actions=${spec.actions.joinToString { "${it.role}:${it.title}" }}",
-                )
-            } catch (e: Exception) {
-                // A malformed payload must never take the listener down.
-                if (inspector) NotificationLog.event(this, "post failed: ${e.javaClass.simpleName} ${e.message}")
-            }
+        val id = current?.id ?: idFor(ikey)
+        try {
+            poster.post(id, pkg, spec, sbn.notification, sourceKey = key)
+            active[ikey] = Active(id, hash, pkg, spec, key)
+            if (inspector) NotificationLog.event(
+                this,
+                "island ${if (current == null) "posted" else "updated"} [$ikey]: ${spec.kind} \"${spec.title}\" " +
+                    "pill=${spec.pillText} trailing=${spec.trailing} pin=${spec.highlight} progress=${spec.progress} " +
+                    "actions=${spec.actions.joinToString { "${it.role}:${it.title}" }}",
+            )
+        } catch (e: Exception) {
+            // A malformed payload must never take the listener down.
+            if (inspector) NotificationLog.event(this, "post failed: ${e.javaClass.simpleName} ${e.message}")
         }
     }
 
     /**
+     * The owner of island [ikey] went away or stopped qualifying. Another live notification of the
+     * same app and island key may take over (same id, so HyperOS updates in place); otherwise the
+     * island is cancelled. Caller holds [active].
+     */
+    private fun releaseOwner(bridge: AppBridge, ikey: String, ownerKey: String, pkg: String) {
+        val old = active.remove(ikey) ?: return
+        val candidates = liveNotifications().orEmpty()
+            .filter { it.packageName == pkg && it.key != ownerKey && bridge.islandKeyFor(it) == ikey }
+            .sortedByDescending { it.postTime }
+        for (c in candidates) {
+            applyLocked(bridge, c, pkg)
+            if (active[ikey] != null) {
+                if (inspector) NotificationLog.event(this, "island handed over [$ikey]: ${ownerKey} -> ${c.key}")
+                return
+            }
+        }
+        cancelOurs(old.id)
+        firstSeen.remove(ikey)
+        if (inspector) NotificationLog.event(this, "island dropped [$ikey]: owner $ownerKey gone")
+    }
+
+    /**
      * Re-derives every island from the notifications that are live right now and cancels the ones
-     * whose source has gone. Cheap, so it is also run when the main screen comes to the foreground.
+     * whose owner has gone. Cheap, so it is also run when the main screen comes to the foreground.
      */
     fun resync() {
-        val live = try { activeNotifications } catch (_: Exception) { null } ?: return
-        val liveKeys = HashSet<String>()
-        live.forEach { if (it.packageName != packageName) liveKeys.add(it.key) }
+        val live = liveNotifications() ?: return
+        val liveKeys = live.filter { it.packageName != packageName }.mapTo(HashSet()) { it.key }
         synchronized(active) {
-            val it = active.entries.iterator()
-            while (it.hasNext()) {
-                val (key, island) = it.next()
-                if (key !in liveKeys) {
-                    cancelOurs(island.id)
-                    it.remove()
-                    firstSeen.remove(key)
-                    if (inspector) NotificationLog.event(this, "resync: dropped orphan island for $key")
-                }
+            val orphans = active.entries.filter { it.value.sourceKey !in liveKeys }.map { it.key to it.value }
+            for ((ikey, island) in orphans) {
+                val bridge = bridgeByPackage[island.pkg]
+                if (bridge != null) releaseOwner(bridge, ikey, island.sourceKey, island.pkg)
+                else { active.remove(ikey); cancelOurs(island.id); firstSeen.remove(ikey) }
             }
         }
         live.forEach { if (it.packageName != packageName) handlePosted(it) }
@@ -209,7 +239,7 @@ class IslandBridgeService : NotificationListenerService(),
             activeNotifications?.firstOrNull { it.key == sourceKey }
                 ?.notification?.actions?.getOrNull(sourceIndex)
         } catch (_: Exception) { null }
-        val snapshot = synchronized(active) { active[sourceKey] }
+        val snapshot = synchronized(active) { active.values.firstOrNull { it.sourceKey == sourceKey } }
         val snapshotAction = snapshot?.spec?.actions?.firstOrNull { it.sourceIndex == sourceIndex }
 
         val intent: PendingIntent? = liveAction?.actionIntent ?: snapshotAction?.intent
@@ -236,9 +266,11 @@ class IslandBridgeService : NotificationListenerService(),
 
     private fun repost(sourceKey: String) {
         val sbn = try { activeNotifications?.firstOrNull { it.key == sourceKey } } catch (_: Exception) { null } ?: return
-        synchronized(active) { active.remove(sourceKey) }
+        synchronized(active) { active.entries.removeIf { it.value.sourceKey == sourceKey } }
         handlePosted(sbn)
     }
+
+    private fun liveNotifications(): Array<StatusBarNotification>? = try { activeNotifications } catch (_: Exception) { null }
 
     private fun cancelOurs(id: Int) {
         ourCancels.add(id)
@@ -258,11 +290,11 @@ class IslandBridgeService : NotificationListenerService(),
         synchronized(active) {
             val it = active.entries.iterator()
             while (it.hasNext()) {
-                val (srcKey, island) = it.next()
+                val (ikey, island) = it.next()
                 if (paused || island.pkg !in enabled) {
                     cancelOurs(island.id)
                     it.remove()
-                    firstSeen.remove(srcKey)
+                    firstSeen.remove(ikey)
                 }
             }
         }
@@ -279,6 +311,7 @@ class IslandBridgeService : NotificationListenerService(),
 
     companion object {
         private const val ID_BASE = 1000
+        private const val HANDOVER_MS = 400L
 
         @Volatile var connected: Boolean = false
             private set

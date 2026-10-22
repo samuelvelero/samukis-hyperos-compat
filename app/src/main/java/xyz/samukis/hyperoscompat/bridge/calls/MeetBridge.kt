@@ -22,8 +22,11 @@ class MeetBridge(context: Context) : CallBridge(
     accentColor = "#00897B",
     packages = setOf("com.google.android.apps.tachyon", "com.google.android.apps.meetings"),
 ) {
-    override fun other(x: Notif, firstSeen: Long): IslandSpec? {
-        if (x.ongoing || !kw.looksMeetingSoon(x.haystack)) return null
+    override fun other(x: Notif, firstSeen: Long, now: Long): IslandSpec? {
+        // A reminder never replaces a meeting already on the island; when the meeting starts, its
+        // in-call notification takes this same island over.
+        if (callActive || x.ongoing || !kw.looksMeetingSoon(x.haystack)) return null
+        claim(x, now)
         val mins = Text.minutes(x.haystack)
         return IslandSpec(
             kind = IslandKind.STATUS,

@@ -21,8 +21,9 @@ class WhatsAppBridge(context: Context) : CallBridge(
     accentColor = "#25D366",
     packages = setOf("com.whatsapp", "com.whatsapp.w4b"),
 ) {
-    override fun other(x: Notif, firstSeen: Long): IslandSpec? {
-        if (!kw.looksRecording(x.haystack)) return null
+    override fun other(x: Notif, firstSeen: Long, now: Long): IslandSpec? {
+        if (callActive || !kw.looksRecording(x.haystack)) return null
+        claim(x, now)
         return IslandSpec(
             kind = IslandKind.TIMER,
             title = str(R.string.recording_voice_note),

@@ -35,6 +35,12 @@ interface AppBridge {
      */
     fun translate(sbn: StatusBarNotification, firstSeen: Long): IslandSpec?
 
+    /**
+     * Which island this notification feeds. Default: its own. Session bridges return one key per
+     * app so several notifications share and update a single island.
+     */
+    fun islandKeyFor(sbn: StatusBarNotification): String = sbn.key
+
     /** True when this app must never show more than one island at a time (newest wins). */
     val singleIsland: Boolean get() = false
 

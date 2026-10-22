@@ -82,6 +82,7 @@
     <string name="ride_searching_short">Buscando</string>
     <string name="meeting_soon">Empieza pronto</string>
     <string name="minutes_short">%1$d min</string>
+    <string name="transfers_count">%1$d en curso</string>
     <string name="demo_text">Isla de prueba</string>
     <string name="demo_dismiss">Cerrar</string>
 

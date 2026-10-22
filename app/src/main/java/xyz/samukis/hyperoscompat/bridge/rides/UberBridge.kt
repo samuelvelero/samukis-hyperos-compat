@@ -1,15 +1,12 @@
 package xyz.samukis.hyperoscompat.bridge.rides
 
 import android.content.Context
-import android.service.notification.StatusBarNotification
 import xyz.samukis.hyperoscompat.R
-import xyz.samukis.hyperoscompat.bridge.ActionRole
 import xyz.samukis.hyperoscompat.bridge.ActionRole.CALL
 import xyz.samukis.hyperoscompat.bridge.ActionRole.MESSAGE
 import xyz.samukis.hyperoscompat.bridge.ActionRole.SHARE
-import xyz.samukis.hyperoscompat.bridge.BaseBridge
+import xyz.samukis.hyperoscompat.bridge.SessionBridge
 import xyz.samukis.hyperoscompat.bridge.BridgeCategory
-import xyz.samukis.hyperoscompat.bridge.IslandAction
 import xyz.samukis.hyperoscompat.bridge.IslandKind
 import xyz.samukis.hyperoscompat.bridge.IslandSpec
 import xyz.samukis.hyperoscompat.bridge.Notif
@@ -29,7 +26,7 @@ import xyz.samukis.hyperoscompat.bridge.Text
  * Observed on device (Oct 2026, es-PE): live title "Inicio de viaje en 1 min", text
  * "A0A475 • Chevrolet Aveo\nAmarillo" (plate • model, colour). Other phrasings are heuristic.
  */
-class UberBridge(context: Context) : BaseBridge(
+class UberBridge(context: Context) : SessionBridge(
     context,
     packageName = "com.ubercab",
     nameRes = R.string.app_uber,
@@ -37,34 +34,26 @@ class UberBridge(context: Context) : BaseBridge(
     category = BridgeCategory.TRANSPORT,
     accentColor = "#FFFFFF",
 ) {
-    override val singleIsland: Boolean = true
-
     private enum class Phase { SEARCHING, PICKUP, ARRIVED, TRIP }
 
     // ---- What we know about the current ride, from the live notification and Uber's pushes.
-    private var liveKey: String? = null
     private var pin: String? = null
     private var vehicle: String? = null
     private var phase: Phase? = null
     /** Largest minutes-left seen in the current phase: the 0% point of the derived progress bar. */
     private var phaseMinutesMax = 0
-    private val borrowed = LinkedHashMap<ActionRole, IslandAction>()
-    private var touchedAt = 0L
-    private var refresh = false
 
-    override fun takeRefreshRequest(): Boolean = refresh.also { refresh = false }
-
-    override fun onRemoved(sbn: StatusBarNotification) {
-        if (sbn.key == liveKey) reset()
+    override fun onEnd() {
+        pin = null
+        vehicle = null
+        phase = null
+        phaseMinutesMax = 0
     }
 
-    override fun translate(x: Notif, firstSeen: Long): IslandSpec? {
+    override fun session(x: Notif, firstSeen: Long, now: Long): IslandSpec? {
         val h = x.haystack
-        val now = System.currentTimeMillis()
-        if (touchedAt != 0L && now - touchedAt > STALE_MS) reset()
-
         if (kw.looksTripOver(h)) {
-            if (x.ongoing || x.sbn.key == liveKey) reset()
+            if (x.ongoing || x.sbn.key == ownerKey) endSession()
             return null
         }
         absorb(x, now)
@@ -75,8 +64,7 @@ class UberBridge(context: Context) : BaseBridge(
         val clock = Text.clockTime(h, now)
         val next = phaseOf(x, eta, clock) ?: return null
 
-        liveKey = x.sbn.key
-        touchedAt = now
+        claim(x, now)
         val popNow = next == Phase.ARRIVED && phase != Phase.ARRIVED
         if (next != phase) phaseMinutesMax = 0
         phase = next
@@ -147,23 +135,16 @@ class UberBridge(context: Context) : BaseBridge(
     private fun absorb(x: Notif, now: Long) {
         val h = x.haystack
         if (kw.looksPromo(h)) return
-        val fromPush = !x.ongoing && x.sbn.key != liveKey
+        val fromPush = !x.ongoing && x.sbn.key != ownerKey
 
         Text.pin(h)?.takeUnless { h.contains("verific") }?.let { found ->
             if (found != pin) {
                 pin = found
-                if (fromPush) refresh = true
+                if (fromPush) requestRefresh()
             }
-            touchedAt = now
+            touch(now)
         }
-        if (!fromPush || !kw.looksRide(h)) return
-        for (role in BORROWABLE) {
-            val a = x.pick(arrayOf(role)).firstOrNull() ?: continue
-            if (borrowed[role]?.intent == a.intent) continue
-            // sourceIndex -1: the button is fired directly, not looked up in the live notification.
-            borrowed[role] = IslandAction(role, a.title, null, a.intent)
-            refresh = true
-        }
+        if (fromPush && kw.looksRide(h)) borrow(x, CALL, MESSAGE, SHARE)
     }
 
     private fun phaseOf(x: Notif, eta: Int?, clock: Text.Clock?): Phase? {
@@ -195,16 +176,6 @@ class UberBridge(context: Context) : BaseBridge(
         return ((phaseMinutesMax - left) * 100 / phaseMinutesMax).coerceIn(4, 96)
     }
 
-    private fun reset() {
-        liveKey = null
-        pin = null
-        vehicle = null
-        phase = null
-        phaseMinutesMax = 0
-        borrowed.clear()
-        touchedAt = 0L
-    }
-
     /** "A0A475 • Chevrolet Aveo\nAmarillo" -> "A0A475 · Chevrolet Aveo · Amarillo". */
     private fun clean(s: String): String = s.split('\n')
         .map { it.trim() }
@@ -213,9 +184,6 @@ class UberBridge(context: Context) : BaseBridge(
         .replace(" • ", " · ")
 
     companion object {
-        private const val STALE_MS = 3 * 60 * 60_000L
-        private val BORROWABLE = listOf(CALL, MESSAGE, SHARE)
-
         /** A licence plate: 5–8 upper-case letters/digits (one dash allowed), with both kinds. */
         private val PLATE = Regex("""\b(?=[A-Z0-9-]{5,8}\b)(?=[A-Z0-9-]*\d)(?=[A-Z0-9-]*[A-Z])[A-Z0-9]+(?:-[A-Z0-9]+)?\b""")
     }

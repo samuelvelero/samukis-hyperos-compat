@@ -13,6 +13,10 @@ Lleva eventos de apps de terceros a la **Hyper Island** de HyperOS 3 (Xiaomi, Re
 | Drive, Google Fotos, Xiaomi Cloud, Play Store, Instagram | Subidas y descargas: anillo de porcentaje y tiempo restante | Heurístico |
 | PedidosYa, Rappi | Estado del pedido con ETA, se descarta solo a los minutos | Sin probar aún |
 
+Desde la 1.7.0 cada app tiene **una sola isla**, alimentada por todas sus notificaciones: la llamada pasa de
+"sonando" a "en curso" en la misma isla, el aviso de Meet se convierte en la reunión, varias descargas
+de una app se agrupan con su progreso medio, y los avisos de un pedido actualizan la misma isla.
+
 Cada app es un traductor pequeño en `bridge/`. Las palabras clave que reconocen botones y
 estados están en `res/values/arrays.xml`, en español e inglés.
 
