@@ -7,7 +7,7 @@ Lleva eventos de apps de terceros a la **Hyper Island** de HyperOS 3 (Xiaomi, Re
 | App | Qué muestra la isla | Estado |
 |---|---|---|
 | Discord | Canal de voz, cronómetro, silenciar / reactivar, desconectar | Probado en dispositivo |
-| Uber | Conductor en camino con ETA, llegada, PIN, viaje en curso; llamar / mensaje / compartir | Heurístico, por afinar con el inspector |
+| Uber | Una sola isla por viaje, solo desde la notificación en vivo. Pastilla: PIN + minutos a la recogida, PIN + "Llegó" (se abre sola), hora de llegada durante el viaje. Tarjeta: titular, vehículo, PIN, barra con el coche, llamar y compartir | Primera ronda en dispositivo; afinando |
 | Google Meet | Reunión en curso con cronómetro, silenciar / cámara, salir; aviso "empieza en N min" con Unirse | Heurístico |
 | WhatsApp (y Business) | Llamadas entrantes y en curso; grabación de nota de voz con cancelar | Heurístico |
 | Drive, Google Fotos, Xiaomi Cloud, Play Store, Instagram | Subidas y descargas: anillo de porcentaje y tiempo restante | Heurístico |

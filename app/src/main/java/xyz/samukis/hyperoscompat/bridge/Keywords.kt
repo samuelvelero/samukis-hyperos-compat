@@ -41,6 +41,9 @@ class Keywords private constructor(appContext: Context) {
     private val meetingSoon = list(R.array.kw_meeting_soon)
     private val recording = list(R.array.kw_recording)
     private val progressDone = list(R.array.kw_progress_done)
+    private val rideSearching = list(R.array.kw_ride_searching)
+    private val ridePickup = list(R.array.kw_ride_pickup)
+    private val rideTrip = list(R.array.kw_ride_trip)
 
     /**
      * Order matters: "Desactivar ensordecimiento" must land on DEAFEN before anything else,
@@ -84,6 +87,9 @@ class Keywords private constructor(appContext: Context) {
     fun looksMeetingSoon(text: String) = text.hasAny(meetingSoon)
     fun looksRecording(text: String) = text.hasAny(recording)
     fun looksProgressDone(text: String) = text.hasAny(progressDone)
+    fun looksRideSearching(text: String) = text.hasAny(rideSearching)
+    fun looksRidePickup(text: String) = text.hasAny(ridePickup)
+    fun looksRideTrip(text: String) = text.hasAny(rideTrip)
 
     private fun String.hasAny(words: List<String>) = words.any { contains(it) }
 

@@ -96,7 +96,8 @@ class IslandBridgeService : NotificationListenerService(),
             }
             return
         }
-        if (!bridgeByPackage.containsKey(sbn.packageName)) return
+        val bridge = bridgeByPackage[sbn.packageName] ?: return
+        bridge.onRemoved(sbn)
         if (inspector) NotificationLog.event(this, "REMOVED ${sbn.key} reason=$reason")
         synchronized(active) {
             active.remove(sbn.key)?.let { cancelOurs(it.id) }
@@ -104,15 +105,34 @@ class IslandBridgeService : NotificationListenerService(),
         }
     }
 
-    private fun handlePosted(sbn: StatusBarNotification) {
+    /**
+     * @param fromRefresh true when re-run because the bridge learned something from another
+     *        notification; such runs are not logged again and never trigger another refresh.
+     */
+    private fun handlePosted(sbn: StatusBarNotification, fromRefresh: Boolean = false) {
         val pkg = sbn.packageName
         if (pkg == packageName) return
         val bridge = bridgeByPackage[pkg] ?: return
         if (pkg !in enabled || paused) return
-        if (inspector) NotificationLog.record(this, sbn)
+        if (inspector && !fromRefresh) NotificationLog.record(this, sbn)
 
+        synchronized(active) { applyLocked(bridge, sbn, pkg) }
+        // e.g. Uber: a push carried the PIN, so the live ride island is rebuilt with it.
+        if (bridge.takeRefreshRequest() && !fromRefresh) refreshPackage(pkg, sbn.key)
+    }
+
+    /** Re-translates the live notifications behind this package's islands, except [exceptKey]. */
+    private fun refreshPackage(pkg: String, exceptKey: String) {
+        val keys = synchronized(active) { active.filter { it.value.pkg == pkg && it.key != exceptKey }.keys.toSet() }
+        if (keys.isEmpty()) return
+        val live = try { activeNotifications } catch (_: Exception) { null } ?: return
+        live.filter { it.key in keys }.forEach { handlePosted(it, fromRefresh = true) }
+    }
+
+    /** Translates one source notification and posts, updates or drops its island. Caller holds [active]. */
+    private fun applyLocked(bridge: AppBridge, sbn: StatusBarNotification, pkg: String) {
         val key = sbn.key
-        synchronized(active) {
+        run {
             val seen = firstSeen[key] ?: System.currentTimeMillis()
             var spec = bridge.translate(sbn, seen)
             // Do Not Disturb: only calls are worth an island while it is on.
@@ -132,9 +152,9 @@ class IslandBridgeService : NotificationListenerService(),
             val current = active[key]
             if (current != null && current.hash == hash) return
 
-            // Timed status islands (order updates, ride pushes) come as separate notifications:
-            // keep only the newest one per app.
-            if (spec.autoDismissMs > 0) {
+            // Timed status islands (order updates) come as separate notifications, and some apps
+            // (Uber) must only ever show one island: keep only the newest one per app.
+            if (spec.autoDismissMs > 0 || bridge.singleIsland) {
                 val stale = active.entries.filter { it.value.pkg == pkg && it.key != key }
                 stale.forEach { cancelOurs(it.value.id); firstSeen.remove(it.key) }
                 active.keys.removeAll(stale.map { it.key }.toSet())
@@ -147,7 +167,7 @@ class IslandBridgeService : NotificationListenerService(),
                 if (inspector) NotificationLog.event(
                     this,
                     "island ${if (current == null) "posted" else "updated"}: ${spec.kind} \"${spec.title}\" " +
-                        "trailing=${spec.trailing} progress=${spec.progress} " +
+                        "pill=${spec.pillText} trailing=${spec.trailing} pin=${spec.highlight} progress=${spec.progress} " +
                         "actions=${spec.actions.joinToString { "${it.role}:${it.title}" }}",
                 )
             } catch (e: Exception) {

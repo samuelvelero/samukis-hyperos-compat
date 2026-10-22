@@ -94,14 +94,34 @@
         <item>está aquí</item><item>esta aqui</item><item>conductor</item><item>tu viaje</item><item>recog</item><item>en ruta</item>
         <item>llegas</item><item>esperando</item>
     </string-array>
+    <!-- Ride phases, evaluated on the live trip notification only, in this order:
+         trip over, arrived, trip, searching, pickup. -->
     <string-array name="kw_arrived">
-        <item>has arrived</item><item>is here</item><item>arrived</item><item>waiting for you</item><item>is waiting</item>
+        <item>has arrived</item><item>is here</item><item>arrived</item><item>waiting for you</item><item>is waiting</item><item>is outside</item>
         <item>ha llegado</item><item>llegó</item><item>está aquí</item><item>esta aqui</item><item>te espera</item><item>está esperando</item><item>esta esperando</item>
+        <item>está afuera</item><item>esta afuera</item>
     </string-array>
     <string-array name="kw_trip_over">
-        <item>receipt</item><item>rate your</item><item>thanks for riding</item><item>how was</item><item>trip ended</item><item>completed trip</item><item>tip</item>
+        <item>receipt</item><item>rate your</item><item>thanks for riding</item><item>how was</item><item>trip ended</item><item>completed trip</item>
+        <item>trip complete</item><item>you\'ve arrived</item><item>you have arrived</item><item>add a tip</item><item>tip your</item>
         <item>recibo</item><item>califica</item><item>calificar</item><item>gracias por viajar</item><item>cómo estuvo</item><item>como estuvo</item>
-        <item>viaje finalizado</item><item>propina</item>
+        <item>viaje finalizado</item><item>viaje terminado</item><item>propina</item><item>llegaste</item><item>has llegado a tu destino</item>
+    </string-array>
+    <string-array name="kw_ride_searching">
+        <item>looking for</item><item>finding</item><item>searching</item><item>matching</item><item>confirming</item>
+        <item>buscando</item><item>confirmando</item><item>asignando</item>
+    </string-array>
+    <string-array name="kw_ride_pickup">
+        <item>pickup</item><item>pick-up</item><item>pick up</item><item>on the way</item><item>on their way</item><item>heading to you</item>
+        <item>arriving in</item><item>meet your driver</item>
+        <item>inicio de viaje</item><item>recog</item><item>recojo</item><item>en camino</item><item>va hacia</item><item>llega en</item>
+        <item>punto de encuentro</item><item>punto de partida</item>
+    </string-array>
+    <string-array name="kw_ride_trip">
+        <item>on trip</item><item>dropoff</item><item>drop-off</item><item>drop off</item><item>arriving at</item><item>arrive at</item>
+        <item>you\'ll arrive</item><item>to your destination</item><item>en viaje</item><item>viaje en curso</item><item>en ruta a</item>
+        <item>en ruta hacia</item><item>tu destino</item><item>llegas</item><item>llegarás</item><item>llegaras</item><item>llegada estimada</item>
+        <item>llegada a las</item>
     </string-array>
 
     <!-- Food delivery (PedidosYa, Rappi) -->

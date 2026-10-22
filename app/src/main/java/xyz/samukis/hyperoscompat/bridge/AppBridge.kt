@@ -34,6 +34,18 @@ interface AppBridge {
      * @return null when the notification is not island-worthy (any existing island is removed).
      */
     fun translate(sbn: StatusBarNotification, firstSeen: Long): IslandSpec?
+
+    /** True when this app must never show more than one island at a time (newest wins). */
+    val singleIsland: Boolean get() = false
+
+    /**
+     * True once after cross-notification state changed (e.g. a PIN learned from a push), so the
+     * service rebuilds this package's live islands. Reading it clears it.
+     */
+    fun takeRefreshRequest(): Boolean = false
+
+    /** A notification of this package went away. */
+    fun onRemoved(sbn: StatusBarNotification) {}
 }
 
 object BridgeRegistry {

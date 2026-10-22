@@ -54,7 +54,7 @@
     <string name="app_pedidosya">PedidosYa</string>
     <string name="app_rappi">Rappi</string>
     <string name="desc_discord">Voice channel with timer, mute and disconnect</string>
-    <string name="desc_uber">Driver on the way, ETA, PIN and arrival</string>
+    <string name="desc_uber">One live island per ride: PIN, pickup time and arrival</string>
     <string name="desc_meet">Meeting timer, mute, leave, “starts soon” reminder</string>
     <string name="desc_whatsapp">Calls and voice-note recording</string>
     <string name="desc_transfer">Progress ring and time left</string>
@@ -90,6 +90,15 @@
     <string name="call_ongoing">In call</string>
     <string name="recording_voice_note">Recording voice note</string>
     <string name="ride_arrived">Arrived</string>
+    <string name="ride_pin">PIN %1$s</string>
+    <string name="ride_pickup_in">Pickup in %1$d min</string>
+    <string name="ride_driver_here">Your driver is here</string>
+    <string name="ride_arrive_at">Arriving at %1$s</string>
+    <string name="ride_arrive_in">Arriving in %1$d min</string>
+    <string name="ride_arrival_at">Arrival %1$s</string>
+    <string name="ride_arrival_short">Arrival</string>
+    <string name="ride_pickup_short">Pickup</string>
+    <string name="ride_searching_short">Searching</string>
     <string name="meeting_soon">Starting soon</string>
     <string name="minutes_short">%1$d min</string>
     <string name="demo_title">Samukis</string>
