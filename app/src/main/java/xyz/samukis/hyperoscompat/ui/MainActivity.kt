@@ -38,6 +38,8 @@ import xyz.samukis.hyperoscompat.databinding.ItemSectionBinding
 import xyz.samukis.hyperoscompat.island.IslandPoster
 import xyz.samukis.hyperoscompat.prefs.Settings
 import xyz.samukis.hyperoscompat.service.IslandBridgeService
+import xyz.samukis.hyperoscompat.swipe.SwipeSearch
+import rikka.shizuku.Shizuku
 import com.google.android.material.R as MR
 
 /**
@@ -53,6 +55,10 @@ class MainActivity : AppCompatActivity() {
 
     private val requestPostNotifications =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { refreshStatus() }
+
+    private val shizukuPermissionListener = Shizuku.OnRequestPermissionResultListener { code, _ ->
+        if (code == SwipeSearch.REQUEST_CODE) { SwipeSearch.ensure(this); refreshSwipe() }
+    }
 
     /** One prerequisite: its label, whether it holds, and how to fix it (null = informational). */
     private class Check(@StringRes val label: Int, val ok: Boolean, val fix: (() -> Unit)?)
@@ -72,7 +78,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupApps()
+        setupSwipeSearch()
         setupDiagnostics()
+        try { Shizuku.addRequestPermissionResultListener(shizukuPermissionListener) } catch (_: Throwable) {}
         b.footer.text = getString(R.string.footer_version, BuildConfig.VERSION_NAME)
         b.footerRepo.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, "https://${getString(R.string.footer_repo)}".toUri()))
@@ -87,11 +95,60 @@ class MainActivity : AppCompatActivity() {
         // Opening the app is a good moment to drop islands whose source already ended.
         IslandBridgeService.instance?.resync()
         ensureServiceBound()
+        SwipeSearch.ensure(this)
+        refreshSwipe()
     }
 
     override fun onPause() {
         handler.removeCallbacksAndMessages(null)
         super.onPause()
+    }
+
+    override fun onDestroy() {
+        try { Shizuku.removeRequestPermissionResultListener(shizukuPermissionListener) } catch (_: Throwable) {}
+        super.onDestroy()
+    }
+
+    // ---------------------------------------------------------------- swipe to search
+
+    private fun setupSwipeSearch() {
+        b.switchSwipeSearch.isChecked = settings.swipeSearchEnabled
+        b.switchSwipeSearch.setOnCheckedChangeListener { _, checked ->
+            settings.swipeSearchEnabled = checked
+            if (SwipeSearch.shizukuRunning() && !SwipeSearch.hasShizukuPermission()) SwipeSearch.requestShizukuPermission()
+            SwipeSearch.ensure(this)
+            refreshSwipe()
+            // The writes run in the background; show the result once they land.
+            handler.postDelayed({ refreshSwipe() }, 1500)
+        }
+    }
+
+    private fun refreshSwipe() {
+        val state = SwipeSearch.state(this)
+        val fix: Pair<Int, () -> Unit>? = when (state) {
+            SwipeSearch.State.NO_SHIZUKU, SwipeSearch.State.OFF_PENDING_RESTORE ->
+                R.string.action_open_shizuku to { safeStart(packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api") ?: Intent()) }
+            SwipeSearch.State.NO_SHIZUKU_PERMISSION -> R.string.action_grant_shizuku to { SwipeSearch.requestShizukuPermission() }
+            else -> null
+        }
+        b.swipeStatus.setText(
+            when (state) {
+                SwipeSearch.State.OFF -> R.string.swipe_state_off
+                SwipeSearch.State.OFF_PENDING_RESTORE -> R.string.swipe_state_off_pending
+                SwipeSearch.State.NO_SHIZUKU -> R.string.swipe_state_no_shizuku
+                SwipeSearch.State.NO_SHIZUKU_PERMISSION -> R.string.swipe_state_no_permission
+                SwipeSearch.State.NO_TARGET -> R.string.swipe_state_no_target
+                SwipeSearch.State.APPLYING -> R.string.swipe_state_applying
+                SwipeSearch.State.ON -> R.string.swipe_state_on
+            },
+        )
+        b.swipeStatus.setTextColor(color(if (state == SwipeSearch.State.ON) androidx.appcompat.R.attr.colorPrimary else MR.attr.colorOnSurfaceVariant))
+        b.btnSwipeFix.visibility = if (fix != null) View.VISIBLE else View.GONE
+        if (fix != null) {
+            b.btnSwipeFix.setText(fix.first)
+            b.btnSwipeFix.setOnClickListener { fix.second() }
+        }
+        if (state == SwipeSearch.State.APPLYING) handler.postDelayed({ refreshSwipe() }, 2000)
     }
 
     // ---------------------------------------------------------------- hero + checks

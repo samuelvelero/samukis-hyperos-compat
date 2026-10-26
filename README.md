@@ -47,6 +47,20 @@ estados están en `res/values/arrays.xml`, en español e inglés.
 - **Inicio automático y batería**: la pantalla principal comprueba el permiso de inicio automático de
   HyperOS y la optimización de batería, y abre esas páginas de ajustes directamente.
 - **Acceso directo al inspector** desde el icono de la app, y botón Compartir en el inspector.
+- **Deslizar abajo abre QuickSearch** (opcional): el launcher de HyperOS abre su propio buscador
+  (AppFinder) con el paquete fijo en el código, o el panel de notificaciones, y ninguna otra app
+  puede recibir ese gesto. Pero el launcher internacional también tiene un efecto de borde
+  "deslizar para buscar" (`QSB_SCROLL_ENTRANCE_STATUS`) que al soltar llama a `startSearch`, es
+  decir, al **buscador global del sistema**. La app lo pone en el borde superior
+  (`QSB_SCROLL_OPTION_STATUS=0`, deslizamiento hacia arriba en `global_search`), deja el
+  deslizamiento hacia abajo en `no_action` para que ni AppFinder ni el panel lo intercepten, y
+  apunta el buscador global (`search_global_search_activity`, ajuste seguro) a
+  `com.tk.quicksearch/.app.MainActivity`. No corre nada en segundo plano y sobrevive reinicios.
+  Android no deja a una app de terceros guardar esas claves, así que la app las escribe con
+  `settings put` a través de [Shizuku](https://shizuku.rikka.app/), que solo hace falta al activar o
+  desactivar el interruptor. Al desactivarlo se restauran los valores anteriores. La animación del
+  borde es la del launcher: blanca con el tema claro del sistema y gris oscuro (`#222224`) con el
+  tema oscuro.
 
 ## Configuración en el teléfono
 

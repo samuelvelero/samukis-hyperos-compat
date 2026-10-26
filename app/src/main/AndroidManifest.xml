@@ -5,9 +5,13 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Lets the app ask to be excluded from Doze so HyperOS keeps the listener bound. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Swipe-to-search (swipe/) writes launcher settings through Shizuku when switched on or off. -->
+    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
 
     <!-- Only the apps we bridge. Avoids QUERY_ALL_PACKAGES. -->
     <queries>
+        <package android:name="moe.shizuku.privileged.api" />
+        <package android:name="com.tk.quicksearch" />
         <package android:name="com.discord" />
         <package android:name="com.ubercab" />
         <package android:name="com.google.android.apps.tachyon" />
@@ -86,6 +90,15 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <!-- Shizuku hands us its binder through this provider. -->
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:enabled="true"
+            android:exported="true"
+            android:multiprocess="false"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
         <receiver
             android:name=".receiver.DismissReceiver"

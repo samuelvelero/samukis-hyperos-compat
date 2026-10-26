@@ -50,6 +50,19 @@
     <string name="badge_beta">Beta</string>
     <string name="app_not_installed">No instalada</string>
 
+    <string name="section_swipe">Búsqueda en la pantalla de inicio</string>
+    <string name="swipe_hint">Deslizar hacia abajo en la pantalla de inicio abre QuickSearch en lugar del buscador de HyperOS. Mueve al borde superior el efecto “deslizar para buscar” del propio launcher y lo apunta a QuickSearch, así no corre nada en segundo plano. Shizuku solo hace falta al activarlo o desactivarlo; al desactivarlo se restauran los ajustes anteriores del launcher.</string>
+    <string name="pref_swipe_search">Deslizar abajo abre QuickSearch</string>
+    <string name="swipe_state_off">Desactivado</string>
+    <string name="swipe_state_off_pending">Desactivado · los ajustes del launcher se restaurarán cuando Shizuku vuelva a estar en marcha.</string>
+    <string name="swipe_state_no_shizuku">Inicia Shizuku para aplicar los ajustes del launcher (solo hace falta ahora, no tras reiniciar).</string>
+    <string name="swipe_state_no_permission">Autoriza esta app en Shizuku.</string>
+    <string name="swipe_state_no_target">QuickSearch no está instalado.</string>
+    <string name="swipe_state_applying">Aplicando ajustes del launcher…</string>
+    <string name="swipe_state_on">Activo</string>
+    <string name="action_open_shizuku">Abrir Shizuku</string>
+    <string name="action_grant_shizuku">Autorizar en Shizuku</string>
+
     <string name="section_diagnostics">Diagnóstico</string>
     <string name="diag_hint">Solo hace falta cuando algo no aparece.</string>
     <string name="pref_show_in_shade">Mostrar también las islas en el panel de notificaciones</string>

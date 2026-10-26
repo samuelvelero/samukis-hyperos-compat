@@ -3,3 +3,6 @@
 -keepclassmembers class kotlinx.serialization.json.** { *** Companion; }
 -keepclasseswithmembers class kotlinx.serialization.json.** { kotlinx.serialization.KSerializer serializer(...); }
 -dontwarn kotlinx.serialization.**
+
+# Shizuku's binder plumbing is looked up by name, and SwipeSearch reaches newProcess by reflection.
+-keep class rikka.shizuku.** { *; }

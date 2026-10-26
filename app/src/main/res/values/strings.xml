@@ -65,6 +65,20 @@
     <string name="badge_beta">Beta</string>
     <string name="app_not_installed">Not installed</string>
 
+    <!-- Swipe to search -->
+    <string name="section_swipe">Home screen search</string>
+    <string name="swipe_hint">Swipe down on the home screen to open QuickSearch instead of HyperOS search. The launcher\'s own “swipe for search” edge effect is moved to the top and pointed at QuickSearch, so nothing runs in the background. Shizuku is needed only while switching this on or off; the previous launcher settings are restored when you switch it off.</string>
+    <string name="pref_swipe_search">Swipe down opens QuickSearch</string>
+    <string name="swipe_state_off">Off</string>
+    <string name="swipe_state_off_pending">Off · the launcher settings are restored when Shizuku runs again.</string>
+    <string name="swipe_state_no_shizuku">Start Shizuku to apply the launcher settings (only needed now, not after a reboot).</string>
+    <string name="swipe_state_no_permission">Allow this app in Shizuku.</string>
+    <string name="swipe_state_no_target">QuickSearch is not installed.</string>
+    <string name="swipe_state_applying">Applying launcher settings…</string>
+    <string name="swipe_state_on">Active</string>
+    <string name="action_open_shizuku">Open Shizuku</string>
+    <string name="action_grant_shizuku">Allow in Shizuku</string>
+
     <!-- Diagnostics -->
     <string name="section_diagnostics">Diagnostics</string>
     <string name="diag_hint">Only needed when something does not show up.</string>
