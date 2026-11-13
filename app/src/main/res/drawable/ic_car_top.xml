@@ -1,0 +1,7 @@
+<!-- A car seen from above, nose to the right, windows cut out: rides along the island's progress bar. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
+        android:pathData="M6,5.5H18A5,5 0,0 1,23 10.5V13.5A5,5 0,0 1,18 18.5H6A5,5 0,0 1,1 13.5V10.5A5,5 0,0 1,6 5.5Z M15.2,7.5H16A1.2,1.2 0,0 1,17.2 8.7V15.3A1.2,1.2 0,0 1,16 16.5H15.2A1.2,1.2 0,0 1,14 15.3V8.7A1.2,1.2 0,0 1,15.2 7.5Z M5.5,8.5A1,1 0,0 1,6.5 9.5V14.5A1,1 0,0 1,5.5 15.5A1,1 0,0 1,4.5 14.5V9.5A1,1 0,0 1,5.5 8.5Z" />
+</vector>

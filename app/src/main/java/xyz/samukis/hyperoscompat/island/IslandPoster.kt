@@ -143,6 +143,11 @@ class IslandPoster(private val context: Context, private val settings: Settings)
                     pictureKey = picKey,
                     actionKeys = keys,
                 )
+                // After setBaseInfo: the right-hand picture of the expanded card.
+                spec.sidePicture?.let { pic ->
+                    island.addPicture(HyperPicture("side", pic))
+                    island.setPicInfo(1, "side")
+                }
                 spec.progress?.let { p ->
                     island.setProgressBar(
                         p, accent,

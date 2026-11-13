@@ -1,6 +1,11 @@
 package xyz.samukis.hyperoscompat.bridge.rides
 
 import android.content.Context
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.drawable.Icon
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.toColorInt
 import xyz.samukis.hyperoscompat.R
 import xyz.samukis.hyperoscompat.bridge.ActionRole.CALL
 import xyz.samukis.hyperoscompat.bridge.ActionRole.MESSAGE
@@ -21,10 +26,12 @@ import xyz.samukis.hyperoscompat.bridge.Text
  *
  * The summary pill follows the ride: PIN + minutes to pickup while waiting, PIN + "Arrived" when
  * the driver is there (the island pops open), arrival time during the trip. The expanded card is
- * always the same layout: headline, vehicle, PIN chip, a progress bar with a car, and buttons.
+ * always the same layout: headline, vehicle, PIN chip, a dot in the car's colour on the right, a
+ * progress bar with a top-view car, and a share button (no call button, by the user's choice).
  *
  * Observed on device (Oct 2026, es-PE): live title "Inicio de viaje en 1 min", text
- * "A0A475 • Chevrolet Aveo\nAmarillo" (plate • model, colour). Other phrasings are heuristic.
+ * "A0A475 • Chevrolet Aveo\nAmarillo" (plate • model, colour). On the trip (Nov 2026): title "Destino 7:37 PM", text "En camino a Jirón …", so
+ * "destino" must win over the pickup keyword "en camino". Other phrasings are heuristic.
  */
 class UberBridge(context: Context) : SessionBridge(
     context,
@@ -85,18 +92,26 @@ class UberBridge(context: Context) : SessionBridge(
         }
         // During the trip the live text usually names the destination; before it, the car.
         val content = when (next) {
-            Phase.TRIP -> text.takeUnless { PLATE.containsMatchIn(it) }?.ifEmpty { null } ?: vehicle
+            Phase.TRIP -> text.takeUnless { PLATE.containsMatchIn(it) }?.replace(HEADING_TO, "")?.ifEmpty { null } ?: vehicle
             else -> vehicle ?: text.ifEmpty { null }
         }?.takeIf { it != title }
         val detail = when {
             next == Phase.PICKUP && eta != null && clockText != null -> str(R.string.ride_arrival_at, clockText)
-            next == Phase.TRIP && clockText != null && eta != null -> str(R.string.minutes_short, eta)
+            // On the trip: minutes left and the plate, so the car stays identifiable.
+            next == Phase.TRIP -> listOfNotNull(
+                eta?.takeIf { clockText != null }?.let { str(R.string.minutes_short, it) },
+                plate,
+            ).joinToString(" · ").ifEmpty { null }
             else -> null
         }
 
         val pill = when (next) {
             Phase.SEARCHING -> str(R.string.ride_searching_short)
-            Phase.PICKUP, Phase.ARRIVED -> pinLabel ?: plate ?: str(R.string.ride_pickup_short)
+            // Both at once when known: the bare PIN digits and the plate ("4821 · A0A475").
+            Phase.PICKUP, Phase.ARRIVED -> when {
+                pin != null && plate != null -> "$pin · $plate"
+                else -> pinLabel ?: plate ?: str(R.string.ride_pickup_short)
+            }
             Phase.TRIP -> str(R.string.ride_arrival_short)
         }
         val trailing = when (next) {
@@ -108,10 +123,10 @@ class UberBridge(context: Context) : SessionBridge(
 
         val progress = progressFor(next, x, eta, clock, now)
 
-        // Contact on the left, share on the right; borrowed from ride pushes when the live one has none.
+        // Only share; borrowed from ride pushes when the live one has none. No call button by design.
         val own = x.pick(arrayOf(CALL, MESSAGE), arrayOf(SHARE))
-        val contact = own.firstOrNull { it.role == CALL || it.role == MESSAGE } ?: borrowed[CALL] ?: borrowed[MESSAGE]
         val share = own.firstOrNull { it.role == SHARE } ?: borrowed[SHARE]
+        val dotColor = carColor(vehicle)
 
         return IslandSpec(
             kind = IslandKind.STATUS,
@@ -122,9 +137,11 @@ class UberBridge(context: Context) : SessionBridge(
             highlight = if (next == Phase.TRIP) null else pinLabel,
             pillText = pill,
             progress = progress,
-            progressGlyph = if (progress != null) R.drawable.ic_car else 0,
-            progressEndGlyph = if (progress == null) 0 else if (next == Phase.TRIP) R.drawable.ic_flag else R.drawable.ic_place,
-            actions = listOfNotNull(contact, share),
+            progressGlyph = if (progress != null) R.drawable.ic_car_top else 0,
+            progressEndGlyph = if (progress == null) 0 else if (next == Phase.TRIP) R.drawable.ic_flag else R.drawable.ic_ring,
+            sidePicture = if (next == Phase.SEARCHING) null else dot(dotColor),
+            sidePictureId = if (next == Phase.SEARCHING) null else dotColor,
+            actions = listOfNotNull(share),
             accentColor = accentColor,
             expandFirst = next == Phase.ARRIVED,
             popOnUpdate = popNow,
@@ -183,7 +200,49 @@ class UberBridge(context: Context) : SessionBridge(
         .joinToString(" · ")
         .replace(" • ", " · ")
 
+    private val dots = HashMap<String, Icon>()
+
+    /** A filled circle in [hex] with a faint rim, so a black car still shows on the black card. */
+    private fun dot(hex: String): Icon = dots.getOrPut(hex) {
+        val size = 144
+        val bitmap = createBitmap(size, size)
+        val canvas = Canvas(bitmap)
+        val c = size / 2f
+        canvas.drawCircle(c, c, c, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = hex.toColorInt() })
+        canvas.drawCircle(c, c, c - 2f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 4f
+            color = 0x33FFFFFF
+        })
+        Icon.createWithBitmap(bitmap)
+    }
+
+    /** The car's colour from Uber's "plate · model · colour" line; yellow when it names none we know. */
+    private fun carColor(vehicle: String?): String {
+        val v = vehicle?.lowercase().orEmpty()
+        return COLORS.firstOrNull { (words, _) -> words.any { v.contains(it) } }?.second ?: "#F2C230"
+    }
+
     companion object {
+        /** "En camino a Jirón …" -> "Jirón …": the card already says it is the trip. */
+        private val HEADING_TO = Regex("""^(en camino a|en ruta a|en ruta hacia|rumbo a|on the way to|heading to)\s+""", RegexOption.IGNORE_CASE)
+
+        private val COLORS = listOf(
+            listOf("amarill", "yellow") to "#F2C230",
+            listOf("blanc", "white") to "#F2F2F7",
+            listOf("negr", "black") to "#1C1C1E",
+            listOf("plat", "gris", "silver", "gray", "grey") to "#A1A1A6",
+            listOf("roj", "red") to "#E5484D",
+            listOf("celeste", "light blue") to "#6CC4F0",
+            listOf("azul", "blue") to "#2F6FDE",
+            listOf("verde", "green") to "#30A46C",
+            listOf("naranja", "orange") to "#F76B15",
+            listOf("guinda", "vino", "granate", "burgundy", "maroon") to "#7A1F2B",
+            listOf("morad", "purple", "violet") to "#7C3AED",
+            listOf("marr", "café", "cafe", "brown") to "#8B5E3C",
+            listOf("beige", "crema") to "#D8C7A3",
+        )
+
         /** A licence plate: 5–8 upper-case letters/digits (one dash allowed), with both kinds. */
         private val PLATE = Regex("""\b(?=[A-Z0-9-]{5,8}\b)(?=[A-Z0-9-]*\d)(?=[A-Z0-9-]*[A-Z])[A-Z0-9]+(?:-[A-Z0-9]+)?\b""")
     }

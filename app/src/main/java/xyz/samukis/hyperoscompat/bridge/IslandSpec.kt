@@ -56,6 +56,10 @@ class IslandSpec(
     @DrawableRes val progressEndGlyph: Int = 0,
     val actions: List<IslandAction> = emptyList(),
     val avatar: Icon? = null,
+    /** STATUS: picture on the right of the expanded card (Uber: a dot in the car's colour); null = none. */
+    val sidePicture: Icon? = null,
+    /** Fingerprint of [sidePicture] for [contentHash], since Icons don't compare by content. */
+    val sidePictureId: String? = null,
     val accentColor: String,
     /** Show the expanded island the first time it appears. */
     val expandFirst: Boolean = kind == IslandKind.INCOMING,
@@ -78,6 +82,7 @@ class IslandSpec(
         h = h * 31 + progressGlyph + progressEndGlyph
         h = h * 31 + popOnUpdate.hashCode()
         h = h * 31 + (avatar != null).hashCode()
+        h = h * 31 + (sidePictureId?.hashCode() ?: 0)
         for (a in actions) {
             h = h * 31 + a.role.ordinal
             h = h * 31 + a.title.toString().hashCode()

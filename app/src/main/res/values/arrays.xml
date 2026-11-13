@@ -121,7 +121,7 @@
         <item>on trip</item><item>dropoff</item><item>drop-off</item><item>drop off</item><item>arriving at</item><item>arrive at</item>
         <item>you\'ll arrive</item><item>to your destination</item><item>en viaje</item><item>viaje en curso</item><item>en ruta a</item>
         <item>en ruta hacia</item><item>tu destino</item><item>llegas</item><item>llegarás</item><item>llegaras</item><item>llegada estimada</item>
-        <item>llegada a las</item>
+        <item>llegada a las</item><item>destino</item><item>destination</item>
     </string-array>
 
     <!-- Food delivery (PedidosYa, Rappi) -->
